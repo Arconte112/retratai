@@ -1,4 +1,3 @@
-import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
@@ -6,13 +5,13 @@ import { Suspense } from "react";
 import { Analytics } from "@vercel/analytics/react";
 
 export const metadata = {
-  title: "Headshots AI",
-  description: "Generate awesome headshots in minutes using AI",
+  title: "RetratAI",
+  description: "Genera fotos profesionales en minutos usando IA",
 };
 
 export default function RootLayout({ children }: any) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body className="min-h-screen flex flex-col">
         <section>
           <Suspense
@@ -26,7 +25,6 @@ export default function RootLayout({ children }: any) {
         <main className="flex flex-1 flex-col items-center py-16">
           {children}
         </main>
-        <Footer />
         <Toaster />
         <Analytics />
       </body>
