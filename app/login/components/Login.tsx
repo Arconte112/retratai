@@ -102,19 +102,10 @@ export const Login = ({
     <>
       <div className="flex items-center justify-center p-8">
         <div className="flex flex-col gap-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 p-4 rounded-xl max-w-sm w-full">
-          <h1 className="text-xl">Welcome</h1>
+          <h1 className="text-xl">Bienvenido</h1>
           <p className="text-xs opacity-60">
-            Sign in or create an account to get started.
+            Inicia sesión o crea una cuenta para comenzar.
           </p>
-          {/* <Button
-            onClick={signInWithGoogle}
-            variant={"outline"}
-            className="font-semibold"
-          >
-            <AiOutlineGoogle size={20} />
-            Continue with Google
-          </Button>
-          <OR /> */}
 
           <form
             onSubmit={handleSubmit(onSubmit)}
@@ -124,25 +115,25 @@ export const Login = ({
               <div className="flex flex-col gap-2">
                 <Input
                   type="email"
-                  placeholder="Email"
+                  placeholder="Correo electrónico"
                   {...register("email", {
                     required: true,
                     validate: {
                       emailIsValid: (value: string) =>
                         /^[A-Z0-9._%-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value) ||
-                        "Please enter a valid email",
+                        "Por favor ingresa un correo válido",
                       emailDoesntHavePlus: (value: string) =>
                         /^[A-Z0-9._%-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value) ||
-                        "Email addresses with a '+' are not allowed",
+                        "No se permiten correos con el símbolo '+'",
                       emailIsntDisposable: (value: string) =>
                         !disposableDomains.includes(value.split("@")[1]) ||
-                        "Please use a permanent email address",
+                        "Por favor usa un correo permanente",
                     },
                   })}
                 />
                 {isSubmitted && errors.email && (
                   <span className={"text-xs text-red-400"}>
-                    {errors.email?.message || "Email is required to sign in"}
+                    {errors.email?.message || "Se requiere un correo para iniciar sesión"}
                   </span>
                 )}
               </div>
@@ -155,7 +146,7 @@ export const Login = ({
               className="w-full"
               type="submit"
             >
-              Continue with Email
+              Continuar con Correo
             </Button>
           </form>
         </div>

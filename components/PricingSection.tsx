@@ -4,7 +4,7 @@ import { Button } from "./ui/button";
 export default function PricingSection() {
   return (
     <div className="w-full max-w-6xl mt-16 mb-16 p-8 rounded-lg space-y-8">
-      <h2 className="text-3xl font-bold text-center mb-8">Pricing</h2>
+      <h2 className="text-3xl font-bold text-center mb-8">Precios</h2>
       <div className="flex flex-wrap justify-center lg:space-x-4 space-y-4 lg:space-y-0 items-stretch">
         {pricingOptions.map((option, index) => (
           <div
@@ -32,7 +32,6 @@ export default function PricingSection() {
             </div>
             <div className="mt-10 text-center">
               <Link href="/login">
-                {" "}
                 <Button className="w-3/4">{option.buttonText}</Button>
               </Link>
             </div>
@@ -45,35 +44,35 @@ export default function PricingSection() {
 
 const pricingOptions = [
   {
-    title: "Starter",
-    price: "1 Credit",
+    title: "Básico",
+    price: "1 Crédito",
     description:
-      "Perfect for individuals looking to enhance their online presence.",
+      "Perfecto para personas que buscan mejorar su presencia en línea.",
     features: [
-      "4 AI Headshots",
+      "4 Fotos con IA",
     ],
-    buttonText: "Choose Starter",
+    buttonText: "Elegir Básico",
     bgColor: "bg-white",
   },
   {
-    title: "Basic",
-    price: "3 Credits",
+    title: "Estándar",
+    price: "3 Créditos",
     description:
-      "Ideal for professionals requiring frequent updates to their profiles.",
+      "Ideal para profesionales que necesitan actualizar sus perfiles con frecuencia.",
     features: [
-      "12 AI Headshots",
+      "12 Fotos con IA",
     ],
-    buttonText: "Choose Basic",
+    buttonText: "Elegir Estándar",
     bgColor: "bg-blue-50",
   },
   {
     title: "Premium",
-    price: "5 Credits",
-    description: "The best value with unlimited possibilities.",
+    price: "5 Créditos",
+    description: "El mejor valor con posibilidades ilimitadas.",
     features: [
-      "20 AI Headshots",
+      "20 Fotos con IA",
     ],
-    buttonText: "Choose Premium",
+    buttonText: "Elegir Premium",
     bgColor: "bg-white",
   },
 ];
