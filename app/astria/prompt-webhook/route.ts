@@ -12,20 +12,20 @@ const appWebhookSecret = process.env.APP_WEBHOOK_SECRET;
 
 if (!resendApiKey) {
   console.warn(
-    "We detected that the RESEND_API_KEY is missing from your environment variables. The app should still work but email notifications will not be sent. Please add your RESEND_API_KEY to your environment variables if you want to enable email notifications."
+    "Se detectó que falta RESEND_API_KEY en tus variables de entorno. La aplicación debería funcionar pero no se enviarán notificaciones por correo. Por favor, agrega tu RESEND_API_KEY a tus variables de entorno si deseas habilitar las notificaciones por correo."
   );
 }
 
 if (!supabaseUrl) {
-  throw new Error("MISSING NEXT_PUBLIC_SUPABASE_URL!");
+  throw new Error("¡FALTA NEXT_PUBLIC_SUPABASE_URL!");
 }
 
 if (!supabaseServiceRoleKey) {
-  throw new Error("MISSING SUPABASE_SERVICE_ROLE_KEY!");
+  throw new Error("¡FALTA SUPABASE_SERVICE_ROLE_KEY!");
 }
 
 if (!appWebhookSecret) {
-  throw new Error("MISSING APP_WEBHOOK_SECRET!");
+  throw new Error("¡FALTA APP_WEBHOOK_SECRET!");
 }
 
 export async function POST(request: Request) {
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
   if (!model_id) {
     return NextResponse.json(
       {
-        message: "Malformed URL, no model_id detected!",
+        message: "¡URL malformada, no se detectó model_id!",
       },
       { status: 500 }
     );
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
   if (!webhook_secret) {
     return NextResponse.json(
       {
-        message: "Malformed URL, no webhook_secret detected!",
+        message: "¡URL malformada, no se detectó webhook_secret!",
       },
       { status: 500 }
     );
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
   if (webhook_secret.toLowerCase() !== appWebhookSecret?.toLowerCase()) {
     return NextResponse.json(
       {
-        message: "Unauthorized!",
+        message: "¡No autorizado!",
       },
       { status: 401 }
     );
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
   if (!user_id) {
     return NextResponse.json(
       {
-        message: "Malformed URL, no user_id detected!",
+        message: "¡URL malformada, no se detectó user_id!",
       },
       { status: 500 }
     );
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json(
       {
-        message: "Unauthorized",
+        message: "No autorizado",
       },
       { status: 401 }
     );
@@ -138,7 +138,7 @@ export async function POST(request: Request) {
       console.error({ modelError });
       return NextResponse.json(
         {
-          message: "Something went wrong!",
+          message: "¡Algo salió mal!",
         },
         { status: 500 }
       );
@@ -157,15 +157,15 @@ export async function POST(request: Request) {
     );
     return NextResponse.json(
       {
-        message: "success",
+        message: "éxito",
       },
-      { status: 200, statusText: "Success" }
+      { status: 200, statusText: "Éxito" }
     );
   } catch (e) {
     console.error(e);
     return NextResponse.json(
       {
-        message: "Something went wrong!",
+        message: "¡Algo salió mal!",
       },
       { status: 500 }
     );

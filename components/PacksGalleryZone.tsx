@@ -26,14 +26,14 @@ export default function PacksGalleryZone() {
     } catch (err: unknown) {
       if (err instanceof Error) {
         toast({
-          title: "Error fetching packs",
+          title: "Error al cargar paquetes",
           description: err.message,
           duration: 5000,
         });
       } else {
         toast({
-          title: "Unknown error",
-          description: "An unknown error occurred.",
+          title: "Error desconocido",
+          description: "Ha ocurrido un error desconocido.",
           duration: 5000,
         });
       }

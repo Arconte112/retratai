@@ -64,9 +64,8 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
       // if user tries to upload more than 10 files, display a toast
       if (newFiles.length + files.length > 10) {
         toast({
-          title: "Too many images",
-          description:
-            "You can only upload up to 10 images in total. Please try again.",
+          title: "Demasiadas imágenes",
+          description: "No puedes subir más de 10 imágenes.",
           duration: 5000,
         });
         return;
@@ -75,9 +74,9 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
       // display a toast if any duplicate files were found
       if (newFiles.length !== acceptedFiles.length) {
         toast({
-          title: "Duplicate file names",
+          title: "Nombres de archivo duplicados",
           description:
-            "Some of the files you selected were already added. They were ignored.",
+            "Algunos de los archivos que seleccionaste ya estaban agregados. Se ignoraron.",
           duration: 5000,
         });
       }
@@ -88,9 +87,34 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
 
       if (totalSize + newSize > 4.5 * 1024 * 1024) {
         toast({
-          title: "Images exceed size limit",
-          description:
-            "The total combined size of the images cannot exceed 4.5MB.",
+          title: "Archivos demasiado grandes",
+          description: "El tamaño total de las imágenes no puede exceder 4.5MB.",
+          duration: 5000,
+        });
+        return;
+      }
+
+      // check that each file is less than 4MB
+      const tooLargeFiles = newFiles.filter(
+        (file) => file.size > 4 * 1024 * 1024
+      );
+      if (tooLargeFiles.length > 0) {
+        toast({
+          title: "Archivos demasiado grandes",
+          description: "Cada imagen debe ser menor a 4MB.",
+          duration: 5000,
+        });
+        return;
+      }
+
+      // check that each file is an image
+      const nonImageFiles = newFiles.filter(
+        (file) => !file.type.startsWith("image/")
+      );
+      if (nonImageFiles.length > 0) {
+        toast({
+          title: "Tipo de archivo no válido",
+          description: "Solo se permiten imágenes.",
           duration: 5000,
         });
         return;
@@ -99,8 +123,8 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
       setFiles([...files, ...newFiles]);
 
       toast({
-        title: "Images selected",
-        description: "The images were successfully selected.",
+        title: "Imágenes seleccionadas",
+        description: "Las imágenes se seleccionaron correctamente.",
         duration: 5000,
       });
     },
@@ -157,24 +181,22 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
         <div className="flex flex-col gap-4">
           {responseMessage}
           <a href="/get-credits">
-            <Button size="sm">Get Credits</Button>
+            <Button size="sm">Obtener Créditos</Button>
           </a>
         </div>
       );
       toast({
-        title: "Something went wrong!",
-        description: responseMessage.includes("Not enough credits")
-          ? messageWithButton
-          : responseMessage,
+        title: "Error",
+        description: messageWithButton,
         duration: 5000,
       });
       return;
     }
 
     toast({
-      title: "Model queued for training",
+      title: "Modelo en cola para entrenamiento",
       description:
-        "The model was queued for training. You will receive an email when the model is ready to use.",
+        "El modelo se ha puesto en cola para entrenamiento. Recibirás un correo electrónico cuando el modelo esté listo para usar.",
       duration: 5000,
     });
 
@@ -203,13 +225,13 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
             name="name"
             render={({ field }) => (
               <FormItem className="w-full rounded-md">
-                <FormLabel>Name</FormLabel>
+                <FormLabel>Nombre</FormLabel>
                 <FormDescription>
-                  Give your model a name so you can easily identify it later.
+                  Déjanos un nombre para que puedas identificarlo fácilmente más tarde.
                 </FormDescription>
                 <FormControl>
                   <Input
-                    placeholder="e.g. Natalie Headshots"
+                    placeholder="ej. Fotos de Natalie"
                     {...field}
                     className="max-w-screen-sm"
                     autoComplete="off"

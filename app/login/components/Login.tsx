@@ -40,8 +40,8 @@ export const Login = ({
       setTimeout(() => {
         setIsSubmitting(false);
         toast({
-          title: "Email sent",
-          description: "Check your inbox for a magic link to sign in.",
+          title: "Email enviado",
+          description: "Revisa tu bandeja de entrada para encontrar el enlace mágico.",
           duration: 5000,
         });
         setIsMagicLinkSent(true);
@@ -49,10 +49,10 @@ export const Login = ({
     } catch (error) {
       setIsSubmitting(false);
       toast({
-        title: "Something went wrong",
+        title: "Algo salió mal",
         variant: "destructive",
         description:
-          "Please try again, if the problem persists, contact us at hello@tryleap.ai",
+          "Por favor, inténtalo de nuevo. Si el problema persiste, contáctanos en hello@tryleap.ai",
         duration: 5000,
       });
     }
@@ -159,7 +159,7 @@ export const OR = () => {
   return (
     <div className="flex items-center my-1">
       <div className="border-b flex-grow mr-2 opacity-50" />
-      <span className="text-sm opacity-50">OR</span>
+      <span className="text-sm opacity-50">O</span>
       <div className="border-b flex-grow ml-2 opacity-50" />
     </div>
   );

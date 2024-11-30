@@ -1,4 +1,3 @@
-
 import { LoginFail } from "./components/LoginFail";
 
 export default async function Page({
@@ -7,16 +6,16 @@ export default async function Page({
     searchParams?: { [key: string]: string | string[] | undefined };
 }) {
 
-    let errorMessage = "Something went wrong, please reach out to support.";
+    let errorMessage = "Algo salió mal, por favor contacta a soporte.";
 
     if (searchParams?.err !== undefined) {
         const errorCode = searchParams["err"];
         switch (errorCode) {
             case "AuthApiError":
-                errorMessage = "Oops! It looks like you tried to open your magic link from another device or browser.";
+                errorMessage = "¡Ups! Parece que intentaste abrir el enlace mágico desde otro dispositivo o navegador.";
                 break;
             case "500":
-                errorMessage = "Something went wrong, please reach out to support.";
+                errorMessage = "Algo salió mal, por favor contacta a soporte.";
                 break;
         }
     }
