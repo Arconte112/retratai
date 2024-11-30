@@ -49,7 +49,7 @@ export const Login = ({
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Something went wrong",
+        description: error.message || "Algo salió mal",
         variant: "destructive",
         duration: 5000,
       });
@@ -61,32 +61,54 @@ export const Login = ({
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     setIsSubmitting(true);
     try {
-      const { error } = isSignUp 
-        ? await supabase.auth.signUp({
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email: data.email,
+          password: data.password,
+          options: {
+            emailRedirectTo: redirectUrl,
+          },
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: "Email de verificación enviado",
+          description: "Por favor, revisa tu correo para verificar tu cuenta.",
+          duration: 5000,
+        });
+      } else {
+        const { data: { user }, error } = await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password,
+        });
+
+        if (error) throw error;
+
+        if (user && !user.email_confirmed_at) {
+          // Reenviar correo de verificación
+          const { error: resendError } = await supabase.auth.resend({
+            type: 'signup',
             email: data.email,
-            password: data.password,
             options: {
               emailRedirectTo: redirectUrl,
             },
-          })
-        : await supabase.auth.signInWithPassword({
-            email: data.email,
-            password: data.password,
           });
 
-      if (error) throw error;
+          if (resendError) throw resendError;
 
-      if (isSignUp) {
-        toast({
-          title: "Verification email sent",
-          description: "Please check your email to verify your account.",
-          duration: 5000,
-        });
+          toast({
+            title: "Correo no verificado",
+            description: "Te hemos enviado un nuevo correo de verificación. Por favor, revisa tu bandeja de entrada.",
+            duration: 5000,
+          });
+          return;
+        }
       }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Something went wrong",
+        description: error.message || "Algo salió mal",
         variant: "destructive",
         duration: 5000,
       });
@@ -98,38 +120,38 @@ export const Login = ({
   return (
     <div className="flex items-center justify-center p-8">
       <div className="flex flex-col gap-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 p-4 rounded-xl max-w-sm w-full">
-        <h1 className="text-xl">{isSignUp ? "Create Account" : "Welcome Back"}</h1>
+        <h1 className="text-xl">{isSignUp ? "Crear Cuenta" : "Bienvenido de Nuevo"}</h1>
         <p className="text-xs opacity-60">
-          {isSignUp ? "Sign up to get started" : "Sign in to continue"}
+          {isSignUp ? "Regístrate para comenzar" : "Inicia sesión para continuar"}
         </p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <div>
             <Input
-              placeholder="Email"
+              placeholder="Correo electrónico"
               {...register("email", { required: true })}
               type="email"
             />
             {errors.email && (
-              <span className="text-red-500 text-xs">Email is required</span>
+              <span className="text-red-500 text-xs">El correo electrónico es requerido</span>
             )}
           </div>
 
           <div>
             <Input
-              placeholder="Password"
+              placeholder="Contraseña"
               {...register("password", { required: true, minLength: 6 })}
               type="password"
             />
             {errors.password && (
               <span className="text-red-500 text-xs">
-                Password must be at least 6 characters
+                La contraseña debe tener al menos 6 caracteres
               </span>
             )}
           </div>
 
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
+            {isSubmitting ? "Cargando..." : isSignUp ? "Registrarse" : "Iniciar Sesión"}
           </Button>
         </form>
 
@@ -139,7 +161,7 @@ export const Login = ({
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-neutral-50 dark:bg-neutral-900 px-2 text-neutral-600">
-              Or continue with
+              O continuar con
             </span>
           </div>
         </div>
@@ -159,7 +181,7 @@ export const Login = ({
           onClick={() => setIsSignUp(!isSignUp)}
           className="text-sm text-blue-600 hover:underline"
         >
-          {isSignUp ? "Already have an account? Sign In" : "Need an account? Sign Up"}
+          {isSignUp ? "¿Ya tienes una cuenta? Inicia Sesión" : "¿Necesitas una cuenta? Regístrate"}
         </button>
       </div>
     </div>
