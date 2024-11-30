@@ -104,6 +104,9 @@ export const Login = ({
           });
           return;
         }
+
+        // Redirect to overview page after successful login
+        window.location.href = '/overview';
       }
     } catch (error: any) {
       toast({
