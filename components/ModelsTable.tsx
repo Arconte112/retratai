@@ -31,10 +31,10 @@ export default async function ModelsTable({ models }: ModelsTableProps) {
       <Table className="w-full">
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Samples</TableHead>
+            <TableHead>Nombre</TableHead>
+            <TableHead>Estado</TableHead>
+            <TableHead>Tipo</TableHead>
+            <TableHead>Muestras</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -53,7 +53,7 @@ export default async function ModelsTable({ models }: ModelsTableProps) {
                       model.status === "finished" ? "default" : "secondary"
                     }
                   >
-                    {model.status === "processing" ? "training" : model.status }
+                    {model.status === "processing" ? "entrenando" : model.status === "finished" ? "completado" : model.status }
                     {model.status === "processing" && (
                       <Icons.spinner className="h-4 w-4 animate-spin" />
                     )}

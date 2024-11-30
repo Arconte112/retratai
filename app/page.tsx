@@ -51,7 +51,7 @@ export default async function Index() {
         <div className="lg:w-1/2 w-full mt-8 lg:mt-0">
           <img
             src={hero.src}
-            alt="AI Headshot Illustration"
+            alt="Ilustración de Foto Profesional con IA"
             className="rounded-lg object-cover w-full h-full"
           />
         </div>

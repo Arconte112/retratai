@@ -23,14 +23,14 @@ export default async function Index({ params }: { params: { pack : string } }) {
         <Link href={packsIsEnabled ? "/overview/packs" : "/overview"} className="text-sm w-fit">
           <Button variant={"outline"}>
             <FaArrowLeft className="mr-2" />
-            Go Back
+            Volver
           </Button>
         </Link>
         <Card>
           <CardHeader>
-            <CardTitle>Train Model</CardTitle>
+            <CardTitle>Entrenar Modelo</CardTitle>
             <CardDescription>
-              Choose a name, type, and upload some photos to get started.
+              Elige un nombre, tipo y sube algunas fotos para comenzar.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6">
