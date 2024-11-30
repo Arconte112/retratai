@@ -220,9 +220,9 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
             )}
           />
           <div className="flex flex-col gap-4">
-            <FormLabel>Type</FormLabel>
+            <FormLabel>Tipo</FormLabel>
             <FormDescription>
-              Select the type of headshots you want to generate.
+              Selecciona el tipo de fotos que deseas generar.
             </FormDescription>
             <RadioGroup
               defaultValue={modelType}
@@ -237,14 +237,14 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
                   value="man"
                   id="man"
                   className="peer sr-only"
-                  aria-label="man"
+                  aria-label="hombre"
                 />
                 <Label
                   htmlFor="man"
                   className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
                 >
                   <FaMale className="mb-3 h-6 w-6" />
-                  Man
+                  Hombre
                 </Label>
               </div>
 
@@ -253,22 +253,23 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
                   value="woman"
                   id="woman"
                   className="peer sr-only"
-                  aria-label="woman"
+                  aria-label="mujer"
                 />
                 <Label
                   htmlFor="woman"
                   className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
                 >
                   <FaFemale className="mb-3 h-6 w-6" />
-                  Woman
+                  Mujer
                 </Label>
               </div>
+
               <div>
                 <RadioGroupItem
                   value="person"
                   id="person"
                   className="peer sr-only"
-                  aria-label="person"
+                  aria-label="unisex"
                 />
                 <Label
                   htmlFor="person"
@@ -284,20 +285,19 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
             {...getRootProps()}
             className=" rounded-md justify-center align-middle cursor-pointer flex flex-col gap-4"
           >
-            <FormLabel>Samples</FormLabel>
+            <FormLabel>Muestras</FormLabel>
             <FormDescription>
-              Upload 4-10 images of the person you want to generate headshots
-              for.
+              Sube 4-10 imágenes de la persona para la que quieres generar fotos.
             </FormDescription>
             <div className="outline-dashed outline-2 outline-gray-100 hover:outline-blue-500 w-full h-full rounded-md p-4 flex justify-center align-middle">
               <input {...getInputProps()} />
               {isDragActive ? (
-                <p className="self-center">Drop the files here ...</p>
+                <p className="self-center">Suelta los archivos aquí ...</p>
               ) : (
                 <div className="flex justify-center flex-col items-center gap-2">
                   <FaImages size={32} className="text-gray-700" />
                   <p className="self-center">
-                    Drag 'n' drop some files here, or click to select files.
+                    Arrastra y suelta archivos aquí, o haz clic para seleccionar archivos.
                   </p>
                 </div>
               )}
@@ -317,7 +317,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
                     className="w-full"
                     onClick={() => removeFile(file)}
                   >
-                    Remove
+                    Eliminar
                   </Button>
                 </div>
               ))}
@@ -325,8 +325,8 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
           )}
 
           <Button type="submit" className="w-full" isLoading={isLoading}>
-            Train Model{" "}
-            {stripeIsConfigured && <span className="ml-1">(1 Credit)</span>}
+            Entrenar Modelo{" "}
+            {stripeIsConfigured && <span className="ml-1">(1 Crédito)</span>}
           </Button>
         </form>
       </Form>
