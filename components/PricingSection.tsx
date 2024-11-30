@@ -44,35 +44,36 @@ export default function PricingSection() {
 
 const pricingOptions = [
   {
-    title: "Básico",
-    price: "1 Crédito",
-    description:
-      "Perfecto para personas que buscan mejorar su presencia en línea.",
+    title: "1 Crédito",
+    price: "$12",
+    description: "Esto incluye:",
     features: [
-      "4 Fotos con IA",
+      "16 Fotos de Perfil",
+      "1 Modelo Incluido"
     ],
-    buttonText: "Elegir Básico",
+    buttonText: "Pagar",
     bgColor: "bg-white",
   },
   {
-    title: "Estándar",
-    price: "3 Créditos",
-    description:
-      "Ideal para profesionales que necesitan actualizar sus perfiles con frecuencia.",
+    title: "3 Créditos",
+    price: "$30",
+    description: "Esto incluye:",
     features: [
-      "12 Fotos con IA",
+      "48 Fotos de Perfil",
+      "3 Modelos Incluidos"
     ],
-    buttonText: "Elegir Estándar",
+    buttonText: "Pagar",
     bgColor: "bg-blue-50",
   },
   {
-    title: "Premium",
-    price: "5 Créditos",
-    description: "El mejor valor con posibilidades ilimitadas.",
+    title: "5 Créditos",
+    price: "$40",
+    description: "Esto incluye:",
     features: [
-      "20 Fotos con IA",
+      "80 Fotos de Perfil",
+      "5 Modelos Incluidos"
     ],
-    buttonText: "Elegir Premium",
+    buttonText: "Pagar",
     bgColor: "bg-white",
   },
 ];
