@@ -25,8 +25,6 @@ export async function GET(req: NextRequest) {
     try {
       await supabase.auth.exchangeCodeForSession(code);
 
-      // ater exchanging the code, we should check if the user has a feature-flag row and a credits now, if not, we should create one
-
       const { data: user, error: userError } = await supabase.auth.getUser();
 
       if (userError || !user) {
@@ -38,6 +36,8 @@ export async function GET(req: NextRequest) {
           `${requestUrl.origin}/login/failed?err=500`
         );
       }
+
+      return NextResponse.redirect(`${requestUrl.origin}/overview`);
     } catch (error) {
       if (isAuthApiError(error)) {
         console.error(
