@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import ExplainerSection from "@/components/ExplainerSection";
 import PricingSection from "@/components/PricingSection";
 import PriceComparisonSection from "@/components/PriceComparisonSection";
+import FAQSection from "@/components/FAQSection";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +61,7 @@ export default async function Index() {
       <ExplainerSection />
       <PriceComparisonSection />
       <PricingSection />
+      <FAQSection />
     </div>
   );
 }
