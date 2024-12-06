@@ -1,14 +1,26 @@
 'use client';
 
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import React, { useState } from 'react';
+
+interface FAQItem {
+  question: string;
+  answer: string;
+}
+
+interface FAQCategory {
+  category: string;
+  items: FAQItem[];
+}
 
 export default function FAQSection() {
-  const faqs = [
+  const [openItems, setOpenItems] = useState<{ [key: string]: boolean }>({});
+
+  const toggleItem = (categoryIndex: number, itemIndex: number) => {
+    const key = `${categoryIndex}-${itemIndex}`;
+    setOpenItems(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const faqs: FAQCategory[] = [
     {
       category: "Generales",
       items: [
@@ -83,21 +95,34 @@ export default function FAQSection() {
     <div className="w-full max-w-6xl mt-16 mb-16 p-8 space-y-8">
       <h2 className="text-3xl font-bold text-center mb-8">Preguntas Frecuentes</h2>
       
-      {faqs.map((category, index) => (
-        <div key={index} className="space-y-4">
+      {faqs.map((category, categoryIndex) => (
+        <div key={categoryIndex} className="space-y-4">
           <h3 className="text-xl font-semibold mb-4">{category.category}</h3>
-          <Accordion type="single" collapsible className="w-full">
-            {category.items.map((item, itemIndex) => (
-              <AccordionItem key={itemIndex} value={`item-${index}-${itemIndex}`}>
-                <AccordionTrigger className="text-left">
-                  {item.question}
-                </AccordionTrigger>
-                <AccordionContent>
-                  {item.answer}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+          <div className="space-y-2">
+            {category.items.map((item, itemIndex) => {
+              const key = `${categoryIndex}-${itemIndex}`;
+              const isOpen = openItems[key];
+
+              return (
+                <div key={itemIndex} className="border rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => toggleItem(categoryIndex, itemIndex)}
+                    className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center"
+                  >
+                    <span className="font-medium">{item.question}</span>
+                    <span className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`}>
+                      ▼
+                    </span>
+                  </button>
+                  {isOpen && (
+                    <div className="px-4 py-3 bg-white">
+                      {item.answer}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       ))}
     </div>
