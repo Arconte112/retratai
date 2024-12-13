@@ -13,27 +13,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { SubmitHandler, useForm } from "react-hook-form";
-import { FaFemale, FaImages, FaMale, FaRainbow } from "react-icons/fa";
+import { FaFemale, FaImages, FaMale } from "react-icons/fa";
 import * as z from "zod";
 import { fileUploadFormSchema } from "@/types/zod";
 import { upload } from "@vercel/blob/client";
-import axios from "axios";
 import JSZip from 'jszip';
-import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
+import { Icons } from "@/components/icons";
 
 type FormInput = z.infer<typeof fileUploadFormSchema>;
 
@@ -45,10 +37,6 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { toast } = useToast();
   const router = useRouter();
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   const form = useForm<FormInput>({
     resolver: zodResolver(fileUploadFormSchema),
@@ -58,7 +46,10 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
     },
   });
 
-  const onSubmit: SubmitHandler<FormInput> = async () => {
+  const onSubmit: SubmitHandler<FormInput> = async (data) => {
+    console.log('Form submitted with tune type:', tuneType);
+    console.log('Form data:', data);
+    
     if (tuneType === 'replicate') {
       await handleReplicateSubmit();
     } else {
@@ -67,40 +58,49 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
   };
 
   const handleReplicateSubmit = async () => {
+    console.log('Starting handleReplicateSubmit');
+    console.log('Number of files:', files.length);
+    
+    if (files.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select at least one image",
+        duration: 5000,
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // Create a new ZIP file
+      console.log('Creating ZIP file');
       const zip = new JSZip();
       
       // Add all files to the ZIP
       for (const file of files) {
+        console.log('Adding file to ZIP:', file.name);
         const arrayBuffer = await file.arrayBuffer();
         zip.file(file.name, arrayBuffer);
       }
       
       // Generate ZIP file
+      console.log('Generating ZIP blob');
       const zipBlob = await zip.generateAsync({ type: "blob" });
       
       // Create a File object from the Blob
       const zipId = uuidv4();
-      const zipFile = new File([zipBlob], `${zipId}.zip`, { type: 'application/zip' });
+      const zipFileName = `${zipId}.zip`;
+      console.log('Creating ZIP file with name:', zipFileName);
+      const zipFile = new File([zipBlob], zipFileName, { type: 'application/zip' });
       
-      // Upload to Supabase Storage
-      const { data, error } = await supabase.storage
-        .from('zip')
-        .upload(`${zipId}.zip`, zipFile);
+      // Upload to Vercel Blob
+      console.log('Uploading to Vercel Blob');
+      const blob = await upload(zipFileName, zipFile, {
+        access: 'public',
+        handleUploadUrl: '/api/upload-zip',
+      });
 
-      if (error) {
-        throw new Error('Error uploading ZIP file: ' + error.message);
-      }
-
-      // Get the public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('zip')
-        .getPublicUrl(`${zipId}.zip`);
-
-      // Here you would call your API endpoint with the ZIP URL
-      // We'll implement this in the next step
+      console.log('Upload successful:', blob);
+      console.log('Public URL:', blob.url);
       
       toast({
         title: "Success",
@@ -109,10 +109,10 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
       });
 
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error in handleReplicateSubmit:', error);
       toast({
         title: "Error",
-        description: "Something went wrong while uploading files",
+        description: error instanceof Error ? error.message : "Something went wrong while uploading files",
         duration: 5000,
       });
     } finally {
@@ -353,28 +353,24 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
               </div>
             </RadioGroup>
           </div>
+          
           <div
             {...getRootProps()}
-            className=" rounded-md justify-center align-middle cursor-pointer flex flex-col gap-4"
+            className="outline-dashed outline-2 outline-gray-100 hover:outline-blue-500 w-full h-full rounded-md p-4 flex justify-center align-middle"
           >
-            <FormLabel>Muestras</FormLabel>
-            <FormDescription>
-              Sube 4-10 imágenes de la persona para la que quieres generar fotos.
-            </FormDescription>
-            <div className="outline-dashed outline-2 outline-gray-100 hover:outline-blue-500 w-full h-full rounded-md p-4 flex justify-center align-middle">
-              <input {...getInputProps()} />
-              {isDragActive ? (
-                <p className="self-center">Suelta los archivos aquí ...</p>
-              ) : (
-                <div className="flex justify-center flex-col items-center gap-2">
-                  <FaImages size={32} className="text-gray-700" />
-                  <p className="self-center">
-                    Arrastra y suelta archivos aquí, o haz clic para seleccionar archivos.
-                  </p>
-                </div>
-              )}
-            </div>
+            <input {...getInputProps()} />
+            {isDragActive ? (
+              <p className="self-center">Suelta los archivos aquí ...</p>
+            ) : (
+              <div className="flex justify-center flex-col items-center gap-2">
+                <FaImages size={32} className="text-gray-700" />
+                <p className="self-center">
+                  Arrastra y suelta archivos aquí, o haz clic para seleccionar archivos.
+                </p>
+              </div>
+            )}
           </div>
+
           {files.length > 0 && (
             <div className="flex flex-row gap-4 flex-wrap">
               {files.map((file) => (
@@ -396,9 +392,18 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
             </div>
           )}
 
-          <Button type="submit" className="w-full" isLoading={isLoading}>
-            Entrenar Modelo{" "}
-            {stripeIsConfigured && <span className="ml-1">(1 Crédito)</span>}
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              <>
+                Train Model{" "}
+                {stripeIsConfigured && <span className="ml-1">(1 Credit)</span>}
+              </>
+            )}
           </Button>
         </form>
       </Form>
