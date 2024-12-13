@@ -175,7 +175,7 @@ export async function POST(request: Request) {
           console.log(error);
           return NextResponse.json(
             {
-              message: `Error creating credits: ${error}\n ${data}`,
+              message: `Error creating credits: ${JSON.stringify(error)}`,
             },
             {
               status: 400,
