@@ -30,6 +30,11 @@ export async function POST(request: Request): Promise<NextResponse> {
           maximumSizeInBytes: 10 * 1024 * 1024, // 10MB
         };
       },
+      onUploadCompleted: async ({ blob, uploadedBy }) => {
+        console.log('Upload completed:', { blob, uploadedBy });
+        // Aquí podrías guardar la referencia del archivo en tu base de datos si lo necesitas
+        return;
+      },
     });
 
     return NextResponse.json(jsonResponse);
