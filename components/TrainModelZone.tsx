@@ -31,16 +31,24 @@ import * as z from "zod";
 import { fileUploadFormSchema } from "@/types/zod";
 import { upload } from "@vercel/blob/client";
 import axios from "axios";
+import JSZip from 'jszip';
+import { createClient } from '@supabase/supabase-js';
+import { v4 as uuidv4 } from 'uuid';
 
 type FormInput = z.infer<typeof fileUploadFormSchema>;
 
 const stripeIsConfigured = process.env.NEXT_PUBLIC_STRIPE_IS_ENABLED === "true";
+const tuneType = process.env.NEXT_PUBLIC_TUNE_TYPE;
 
 export default function TrainModelZone({ packSlug }: { packSlug: string }) {
   const [files, setFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { toast } = useToast();
   const router = useRouter();
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   const form = useForm<FormInput>({
     resolver: zodResolver(fileUploadFormSchema),
@@ -50,8 +58,66 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
     },
   });
 
-  const onSubmit: SubmitHandler<FormInput> = () => {
-    trainModel();
+  const onSubmit: SubmitHandler<FormInput> = async () => {
+    if (tuneType === 'replicate') {
+      await handleReplicateSubmit();
+    } else {
+      await trainModel();
+    }
+  };
+
+  const handleReplicateSubmit = async () => {
+    setIsLoading(true);
+    try {
+      // Create a new ZIP file
+      const zip = new JSZip();
+      
+      // Add all files to the ZIP
+      for (const file of files) {
+        const arrayBuffer = await file.arrayBuffer();
+        zip.file(file.name, arrayBuffer);
+      }
+      
+      // Generate ZIP file
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      
+      // Create a File object from the Blob
+      const zipId = uuidv4();
+      const zipFile = new File([zipBlob], `${zipId}.zip`, { type: 'application/zip' });
+      
+      // Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('zip')
+        .upload(`${zipId}.zip`, zipFile);
+
+      if (error) {
+        throw new Error('Error uploading ZIP file: ' + error.message);
+      }
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('zip')
+        .getPublicUrl(`${zipId}.zip`);
+
+      // Here you would call your API endpoint with the ZIP URL
+      // We'll implement this in the next step
+      
+      toast({
+        title: "Success",
+        description: "Files uploaded successfully",
+        duration: 5000,
+      });
+
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "Something went wrong while uploading files",
+        duration: 5000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const onDrop = useCallback(
@@ -247,9 +313,9 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
               Selecciona el tipo de fotos que deseas generar.
             </FormDescription>
             <RadioGroup
-              defaultValue={modelType}
-              className="grid grid-cols-3 gap-4"
-              value={modelType}
+              defaultValue={form.getValues("type")}
+              className="grid grid-cols-2 gap-4"
+              value={form.getValues("type")}
               onValueChange={(value) => {
                 form.setValue("type", value);
               }}
@@ -283,22 +349,6 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
                 >
                   <FaFemale className="mb-3 h-6 w-6" />
                   Mujer
-                </Label>
-              </div>
-
-              <div>
-                <RadioGroupItem
-                  value="person"
-                  id="person"
-                  className="peer sr-only"
-                  aria-label="unisex"
-                />
-                <Label
-                  htmlFor="person"
-                  className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                >
-                  <FaRainbow className="mb-3 h-6 w-6" />
-                  Unisex
                 </Label>
               </div>
             </RadioGroup>
