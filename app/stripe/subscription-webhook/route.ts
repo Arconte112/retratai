@@ -32,6 +32,12 @@ const creditsPerPriceId: {
   [fiveCreditsPriceId]: 5,
 };
 
+console.log("Variables de entorno de precios:");
+console.log("STRIPE_PRICE_ID_ONE_CREDIT:", oneCreditPriceId);
+console.log("STRIPE_PRICE_ID_THREE_CREDITS:", threeCreditsPriceId);
+console.log("STRIPE_PRICE_ID_FIVE_CREDITS:", fiveCreditsPriceId);
+console.log("Mapeo de créditos por precio:", creditsPerPriceId);
+
 export async function POST(request: Request) {
   console.log("Request from: ", request.url);
   console.log("Request: ", request);
