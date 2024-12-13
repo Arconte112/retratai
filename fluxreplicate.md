@@ -257,7 +257,7 @@ interface TrainingLog {
 - Optimizar formato de imágenes según requerimientos
 - Implementar procesamiento en lotes para múltiples imágenes
 
-### Caché y Almacenamiento
+### Caché y Almacenassmiento
 - Implementar caché de resultados frecuentes
 - Optimizar almacenamiento de archivos temporales
 - Implementar sistema de purga automática
@@ -268,3 +268,40 @@ interface TrainingLog {
 - Documentar proceso de configuración de Replicate
 - Crear guía de troubleshooting
 - Documentar estructura de prompts y parámetros 
+
+
+1. Configuración Inicial
+[ ] Crear variable de entorno REPLICATE_API_TOKEN
+[ ] Crear variable de entorno NEXT_PUBLIC_TUNE_TYPE=replicate para alternar entre backends
+[ ] Instalar dependencia de Replicate (replicate npm package)
+2. Rutas de API
+[ ] Crear nueva ruta /api/replicate/train-model
+[ ] Validación de usuario y créditos
+[ ] Manejo de subida de imágenes a Vercel Blob
+[ ] Creación del registro en la tabla models de Supabase
+[ ] Integración con la API de Replicate
+[ ] Manejo de errores y respuestas
+3. Webhooks y Callbacks
+[ ] Crear ruta /api/replicate/train-webhook
+[ ] Validación de seguridad del webhook
+[ ] Actualización del estado del modelo en Supabase
+[ ] Manejo de notificaciones por email
+4. Base de Datos
+[ ] Mantener la estructura actual de Supabase
+[ ] Tabla models (agregar campo provider='replicate')
+[ ] Tabla samples (mantener igual)
+[ ] Tabla images (mantener igual)
+5. Sistema de Créditos
+[ ] Mantener la lógica actual de créditos
+[ ] Verificación antes del entrenamiento
+[ ] Descuento después del entrenamiento exitoso
+[ ] Manejo de reembolsos en caso de error
+6. Manejo de Errores
+[ ] Implementar manejo de errores específicos de Replicate
+[ ] Mantener consistencia en mensajes de error
+[ ] Implementar rollback en caso de fallos
+7. Testing
+[ ] Pruebas de integración con Replicate
+[ ] Pruebas de webhooks
+[ ] Pruebas de manejo de errores
+[ ] Pruebas de concurrencia
