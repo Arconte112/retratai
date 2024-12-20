@@ -1,5 +1,6 @@
 import { Database } from "@/types/supabase";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import Replicate from "replicate";
@@ -8,9 +9,16 @@ const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN!,
 });
 
+// Cliente de servicio de Supabase
+const supabaseAdmin = createClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
+  const supabase = createRouteHandlerClient<Database>({ cookies });
   const { modelId } = await request.json();
 
   if (!modelId) {
@@ -20,7 +28,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = createRouteHandlerClient<Database>({ cookies });
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -130,7 +137,9 @@ export async function POST(request: Request) {
   }));
 
   // Insertar las imágenes en la BD
-  const { error: insertError } = await supabase.from("images").insert(imagesToInsert);
+  const { error: insertError } = await supabase
+    .from("images")
+    .insert(imagesToInsert);
 
   if (insertError) {
     console.error("Error guardando imágenes en la BD:", insertError);
@@ -140,11 +149,16 @@ export async function POST(request: Request) {
     );
   }
 
-  // Actualizar has_generated a true
-  const { error: updateModelError } = await supabase
+  // Actualizar has_generated a true usando el cliente de servicio
+  console.log("Intentando actualizar has_generated a true para el modelo:", modelId);
+  console.log("Usuario actual:", user.id);
+  console.log("Datos del modelo:", model);
+
+  const { data: updateData, error: updateModelError } = await supabaseAdmin
     .from("models")
     .update({ has_generated: true })
-    .eq("id", modelId);
+    .eq("id", modelId)
+    .select();
 
   if (updateModelError) {
     console.error("Error actualizando has_generated:", updateModelError);
@@ -153,6 +167,7 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+  console.log("Resultado de la actualización:", updateData);
 
   return NextResponse.json(
     { message: "Imágenes generadas y guardadas exitosamente.", images: output },

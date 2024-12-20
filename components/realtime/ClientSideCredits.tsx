@@ -2,8 +2,8 @@
 
 import { Database } from "@/types/supabase";
 import { creditsRow } from "@/types/utils";
-import { createClient } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase-client";
 
 export const revalidate = 0;
 
@@ -14,16 +14,9 @@ type ClientSideCreditsProps = {
 export default function ClientSideCredits({
   creditsRow,
 }: ClientSideCreditsProps) {
+  const [credits, setCredits] = useState<creditsRow | null>(creditsRow);
 
-  if (!creditsRow) return (
-    <p>Créditos: 0</p>
-  )
-
-  const supabase = createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
-  );
-  const [credits, setCredits] = useState<creditsRow>(creditsRow);
+  if (!creditsRow) return <p>Créditos: 0</p>;
 
   useEffect(() => {
     const channel = supabase
@@ -40,11 +33,9 @@ export default function ClientSideCredits({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, credits, setCredits]);
+  }, []);
 
   if (!credits) return null;
 
-  return (
-    <p>Créditos: {credits.credits}</p>
-  );
+  return <p>Créditos: {credits.credits}</p>;
 }

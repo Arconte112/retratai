@@ -2,11 +2,11 @@
 import { Button } from "@/components/ui/button";
 import { Database } from "@/types/supabase";
 import { modelRowWithSamples } from "@/types/utils";
-import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FaImages } from "react-icons/fa";
 import ModelsTable from "../ModelsTable";
+import { supabase } from "@/lib/supabase-client";
 
 const packsIsEnabled = process.env.NEXT_PUBLIC_TUNE_TYPE === "packs";
 
@@ -19,10 +19,6 @@ type ClientSideModelsListProps = {
 export default function ClientSideModelsList({
   serverModels,
 }: ClientSideModelsListProps) {
-  const supabase = createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
-  );
   const [models, setModels] = useState<modelRowWithSamples[]>(serverModels);
 
   useEffect(() => {
@@ -54,7 +50,7 @@ export default function ClientSideModelsList({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, models, setModels]);
+  }, [models, setModels]);
 
   return (
     <div id="train-model-container" className="w-full">

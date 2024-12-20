@@ -3,10 +3,17 @@
 import { Icons } from "@/components/icons";
 import { Database } from "@/types/supabase";
 import { imageRow, modelRow, sampleRow } from "@/types/utils";
-import { createClient } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { supabase } from "@/lib/supabase-client";
 
 export const revalidate = 0;
 
@@ -21,14 +28,10 @@ export default function ClientSideModel({
   serverImages,
   samples,
 }: ClientSideModelProps) {
-  const supabase = createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
-  );
-
   const [model, setModel] = useState<modelRow>(serverModel);
   const [images, setImages] = useState<imageRow[]>(serverImages);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Suscripción para cambios en el modelo
@@ -111,6 +114,27 @@ export default function ClientSideModel({
     }
   };
 
+  const handleDownload = async (imageUrl: string) => {
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `generated-image-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo descargar la imagen",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div id="train-model-container" className="w-full h-full">
       <div className="flex flex-col w-full mt-4 gap-8">
@@ -143,23 +167,57 @@ export default function ClientSideModel({
                 <h1 className="text-xl">Resultados</h1>
                 <div className="flex flex-row flex-wrap gap-4">
                   {images.map((image) => (
-                    <div key={image.id}>
+                    <div key={image.id} className="relative group">
                       <img
                         src={image.uri}
-                        className="rounded-md w-60 object-cover"
+                        className="rounded-md w-60 object-cover cursor-pointer transition-transform hover:scale-105"
                         alt="generada"
+                        onClick={() => setSelectedImage(image.uri)}
                       />
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => handleDownload(image.uri)}
+                      >
+                        <Icons.download className="h-4 w-4" />
+                      </Button>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-            {(model.status !== "finished") && (
+            {model.status !== "finished" && (
               <p>El modelo aún no está listo. Por favor espera a que finalice el entrenamiento.</p>
             )}
           </div>
         </div>
       </div>
+
+      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Vista previa</DialogTitle>
+          </DialogHeader>
+          {selectedImage && (
+            <div className="relative">
+              <img
+                src={selectedImage}
+                alt="Vista previa"
+                className="w-full h-auto rounded-lg"
+              />
+              <Button
+                variant="secondary"
+                size="icon"
+                className="absolute bottom-4 right-4"
+                onClick={() => handleDownload(selectedImage)}
+              >
+                <Icons.download className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
