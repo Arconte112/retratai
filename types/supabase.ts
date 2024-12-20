@@ -1,11 +1,3 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
-
 export interface Database {
   public: {
     Tables: {
@@ -74,6 +66,7 @@ export interface Database {
           status: string
           type: string | null
           user_id: string | null
+          has_generated: boolean // ← Agregar aquí
         }
         Insert: {
           created_at?: string
@@ -83,6 +76,7 @@ export interface Database {
           status?: string
           type?: string | null
           user_id?: string | null
+          has_generated?: boolean // ← Agregar aquí
         }
         Update: {
           created_at?: string
@@ -92,6 +86,7 @@ export interface Database {
           status?: string
           type?: string | null
           user_id?: string | null
+          has_generated?: boolean // ← Agregar aquí
         }
         Relationships: [
           {

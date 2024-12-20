@@ -10,13 +10,6 @@ const replicate = new Replicate({
 
 export const dynamic = "force-dynamic";
 
-/**
- * Espera un JSON con:
- * {
- *   "modelId": number
- * }
- * Ahora el prompt será fijo: "profesional foto of TOK"
- */
 export async function POST(request: Request) {
   const { modelId } = await request.json();
 
@@ -28,7 +21,6 @@ export async function POST(request: Request) {
   }
 
   const supabase = createRouteHandlerClient<Database>({ cookies });
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -57,8 +49,13 @@ export async function POST(request: Request) {
     );
   }
 
-  // model.modelId ahora tiene la versión completa del modelo en replicate, por ejemplo:
-  // "arconte112/dwafwafwad-580a95af-4c03-45fc-92e8-51ac0acd2203:6e552f97af34e088d0b0a69fbfcfcc2c329cd1eb9f23b49620473882d8d2be72"
+  if (model.has_generated) {
+    return NextResponse.json(
+      { message: "Las imágenes ya se generaron anteriormente para este modelo." },
+      { status: 400 }
+    );
+  }
+
   const replicateModel = model.modelId as `${string}/${string}:${string}`;
   if (!replicateModel) {
     return NextResponse.json(
@@ -66,42 +63,61 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
+
   const finalPrompt = "profesional foto of TOK";
 
-  // Parámetros según la doc del modelo
+  // Cambiamos el output_format a "png"
   const input = {
     prompt: finalPrompt,
-    model: "dev",
     go_fast: false,
     lora_scale: 1,
     megapixels: "1",
-    num_outputs: 8,
+    num_outputs: 4,
     aspect_ratio: "1:1",
-    output_format: "webp",
+    output_format: "png",
     guidance_scale: 3,
     output_quality: 80,
     prompt_strength: 0.8,
     extra_lora_scale: 1,
-    num_inference_steps: 28
+    num_inference_steps: 28,
   };
 
-  console.log("Llamando a replicate.run() con input:", input);
+  console.log("Creando predicción en Replicate con input:", input);
 
-  let output;
-  try {
-    output = await replicate.run(replicateModel, { input });
-    console.log("Output de replicate.run():", output);
-  } catch (e: any) {
-    console.error("Error generando imágenes con Replicate:", e);
+  // Dividimos el "replicateModel" en owner/model:version
+  const [ownerModel, version] = replicateModel.split(":");
+  if (!version) {
+    console.error("La versión del modelo no se pudo extraer correctamente.");
+    return NextResponse.json({ message: "Error en el ID del modelo." }, { status: 400 });
+  }
+
+  // Iniciar predicción
+  let prediction = await replicate.predictions.create({
+    version: version,
+    input: input
+  });
+
+  // Hacer polling hasta que la predicción finalice o falle
+  while (
+    prediction.status !== "succeeded" &&
+    prediction.status !== "failed" &&
+    prediction.status !== "canceled"
+  ) {
+    await new Promise((r) => setTimeout(r, 3000));
+    prediction = await replicate.predictions.get(prediction.id);
+  }
+
+  if (prediction.status !== "succeeded") {
+    console.error("La predicción falló o fue cancelada:", prediction.error);
     return NextResponse.json(
       { message: "Error al generar las imágenes." },
       { status: 500 }
     );
   }
 
-  // Verifica el output
+  const output = prediction.output;
   if (!Array.isArray(output) || output.length === 0) {
-    console.error("El modelo devolvió un resultado vacío o no es un array. Output:", output);
+    console.error("La respuesta del modelo no es un array de imágenes o está vacía:", output);
     return NextResponse.json(
       { message: "La respuesta del modelo no es un array de imágenes o está vacía." },
       { status: 500 }
@@ -113,6 +129,7 @@ export async function POST(request: Request) {
     uri,
   }));
 
+  // Insertar las imágenes en la BD
   const { error: insertError } = await supabase.from("images").insert(imagesToInsert);
 
   if (insertError) {
@@ -123,8 +140,23 @@ export async function POST(request: Request) {
     );
   }
 
+  // Actualizar has_generated a true
+  const { error: updateModelError } = await supabase
+    .from("models")
+    .update({ has_generated: true })
+    .eq("id", modelId);
+
+  if (updateModelError) {
+    console.error("Error actualizando has_generated:", updateModelError);
+    return NextResponse.json(
+      { message: "Error actualizando el estado del modelo." },
+      { status: 500 }
+    );
+  }
+
   return NextResponse.json(
     { message: "Imágenes generadas y guardadas exitosamente.", images: output },
     { status: 200 }
   );
 }
+

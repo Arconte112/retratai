@@ -24,10 +24,23 @@ import * as z from "zod";
 import { fileUploadFormSchema } from "@/types/zod";
 import { upload } from "@vercel/blob/client";
 import axios from "axios";
+import { Icons } from "@/components/icons";
 
 type FormInput = z.infer<typeof fileUploadFormSchema>;
 
 const stripeIsConfigured = process.env.NEXT_PUBLIC_STRIPE_IS_ENABLED === "true";
+
+const LoadingState = () => (
+  <div className="flex flex-col items-center justify-center p-8 space-y-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+    <div className="relative">
+      <Icons.spinner className="h-12 w-12 animate-spin text-blue-500" />
+    </div>
+    <div className="text-center">
+      <h3 className="font-semibold text-lg">Generando imágenes...</h3>
+      <p className="text-sm text-gray-500">Este proceso puede tomar unos minutos</p>
+    </div>
+  </div>
+);
 
 export default function TrainModelZone({ packSlug }: { packSlug: string }) {
   const [files, setFiles] = useState<File[]>([]);
@@ -327,6 +340,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
                     size={"sm"}
                     className="w-full"
                     onClick={() => removeFile(file)}
+                    disabled={isLoading}
                   >
                     Eliminar
                   </Button>
@@ -335,9 +349,13 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
             </div>
           )}
 
-          <Button type="submit" className="w-full" isLoading={isLoading}>
-            Entrenar Modelo {stripeIsConfigured && <span className="ml-1">(1 Crédito)</span>}
-          </Button>
+          {isLoading && <LoadingState />}
+
+          {!isLoading && (
+            <Button type="submit" className="w-full">
+              Entrenar Modelo {stripeIsConfigured && <span className="ml-1">(1 Crédito)</span>}
+            </Button>
+          )}
         </form>
       </Form>
     </div>
