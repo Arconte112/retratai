@@ -3,7 +3,6 @@ import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import Replicate from "replicate";
-import { randomUUID } from "crypto";
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN!,
@@ -14,16 +13,16 @@ export const dynamic = "force-dynamic";
 /**
  * Espera un JSON con:
  * {
- *   "modelId": number,
- *   "prompt": string
+ *   "modelId": number
  * }
+ * Ahora el prompt será fijo: "profesional foto of TOK"
  */
 export async function POST(request: Request) {
-  const { modelId, prompt } = await request.json();
+  const { modelId } = await request.json();
 
-  if (!modelId || !prompt) {
+  if (!modelId) {
     return NextResponse.json(
-      { message: "Faltan parámetros: modelId, prompt." },
+      { message: "Faltan parámetros: modelId." },
       { status: 400 }
     );
   }
@@ -47,6 +46,7 @@ export async function POST(request: Request) {
     .single();
 
   if (modelError || !model) {
+    console.error("Error obteniendo modelo:", modelError);
     return NextResponse.json({ message: "Modelo no encontrado" }, { status: 404 });
   }
 
@@ -57,28 +57,40 @@ export async function POST(request: Request) {
     );
   }
 
-  // 'modelId' en la DB se refiere al "destination" o al identificador en replicate. 
-  // En la versión anterior, el entrenamiento en replicate se hacía con un destination del tipo "arconte112/model_name_uuid".
-  // Recuperamos ese valor desde `model.modelId`, que debería contener algo como "arconte112/nombre-modelo-uuid".
-  const hf_lora = model.modelId; // Este es el modelo ya entrenado en Replicate.
-  
+  // model.modelId ahora tiene la versión completa del modelo en replicate, por ejemplo:
+  // "arconte112/dwafwafwad-580a95af-4c03-45fc-92e8-51ac0acd2203:6e552f97af34e088d0b0a69fbfcfcc2c329cd1eb9f23b49620473882d8d2be72"
+  const replicateModel = model.modelId as `${string}/${string}:${string}`;
+  if (!replicateModel) {
+    return NextResponse.json(
+      { message: "ID del modelo no válido" },
+      { status: 400 }
+    );
+  }
+  const finalPrompt = "profesional foto of TOK";
 
-  // Ejecutar el modelo lucataco/flux-dev-lora con nuestro hf_lora
-  // Versión usada en el ejemplo del usuario:
-  const version = "091495765fa5ef2725a175a57b276ec30dc9d39c22d30410f2ede68a3eab66b3";
-  const replicateModel = `lucataco/flux-dev-lora:${version}`;
-
+  // Parámetros según la doc del modelo
   const input = {
-    prompt: prompt,
-    hf_lora: hf_lora
-    // Puedes añadir más parámetros según el schema del modelo:
-    // Por ejemplo: width, height, guidance_scale, etc. 
+    prompt: finalPrompt,
+    model: "dev",
+    go_fast: false,
+    lora_scale: 1,
+    megapixels: "1",
+    num_outputs: 8,
+    aspect_ratio: "1:1",
+    output_format: "webp",
+    guidance_scale: 3,
+    output_quality: 80,
+    prompt_strength: 0.8,
+    extra_lora_scale: 1,
+    num_inference_steps: 28
   };
+
+  console.log("Llamando a replicate.run() con input:", input);
 
   let output;
   try {
     output = await replicate.run(replicateModel, { input });
-    // `output` debería ser un array de URLs de imágenes generadas.
+    console.log("Output de replicate.run():", output);
   } catch (e: any) {
     console.error("Error generando imágenes con Replicate:", e);
     return NextResponse.json(
@@ -87,11 +99,11 @@ export async function POST(request: Request) {
     );
   }
 
-  // Guardar las imágenes generadas en la BD
-  // Asumimos que output es un array de URLs (webp) generadas por el modelo
-  if (!Array.isArray(output)) {
+  // Verifica el output
+  if (!Array.isArray(output) || output.length === 0) {
+    console.error("El modelo devolvió un resultado vacío o no es un array. Output:", output);
     return NextResponse.json(
-      { message: "La respuesta del modelo no es un array de imágenes." },
+      { message: "La respuesta del modelo no es un array de imágenes o está vacía." },
       { status: 500 }
     );
   }
