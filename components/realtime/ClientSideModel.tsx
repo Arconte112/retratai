@@ -5,8 +5,6 @@ import { Database } from "@/types/supabase";
 import { imageRow, modelRow, sampleRow } from "@/types/utils";
 import { createClient } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
-import { AspectRatio } from "../ui/aspect-ratio";
-import { Badge } from "../ui/badge";
 
 export const revalidate = 0;
 
@@ -25,14 +23,18 @@ export default function ClientSideModel({
     process.env.NEXT_PUBLIC_SUPABASE_URL as string,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
   );
-  const [model, setModel] = useState<modelRow>(serverModel);
 
+  // Estado local para almacenar el modelo y las imágenes
+  const [model, setModel] = useState<modelRow>(serverModel);
+  const [images, setImages] = useState<imageRow[]>(serverImages);
+
+  // Suscripción para cambios en el modelo (para actualizar el estado del modelo en tiempo real)
   useEffect(() => {
-    const channel = supabase
+    const modelChannel = supabase
       .channel("realtime-model")
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "models" },
+        { event: "UPDATE", schema: "public", table: "models", filter: `id=eq.${model.id}` },
         (payload: { new: modelRow }) => {
           setModel(payload.new);
         }
@@ -40,9 +42,33 @@ export default function ClientSideModel({
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(modelChannel);
     };
-  }, [supabase, model, setModel]);
+  }, [supabase, model.id]);
+
+  // Suscripción para cambios en las imágenes (para mostrar nuevas imágenes en tiempo real)
+  useEffect(() => {
+    const imagesChannel = supabase
+      .channel("realtime-images")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "images",
+          filter: `modelId=eq.${model.id}`,
+        },
+        (payload: { new: imageRow }) => {
+          // Agregamos la nueva imagen al estado local sin perder las anteriores
+          setImages((prev) => [...prev, payload.new]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(imagesChannel);
+    };
+  }, [supabase, model.id]);
 
   return (
     <div id="train-model-container" className="w-full h-full">
@@ -67,7 +93,7 @@ export default function ClientSideModel({
               <div className="flex flex-1 flex-col gap-2">
                 <h1 className="text-xl">Results</h1>
                 <div className="flex flex-row flex-wrap gap-4">
-                  {serverImages?.map((image) => (
+                  {images.map((image) => (
                     <div key={image.id}>
                       <img
                         src={image.uri}

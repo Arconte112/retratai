@@ -4,8 +4,9 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import Replicate from "replicate";
 import fetch from "node-fetch";
-import AdmZip from "adm-zip"; // Para comprimir las imágenes
+import AdmZip from "adm-zip";
 import { createClient } from "@supabase/supabase-js";
+import { randomUUID } from "crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ if (!supabaseServiceRoleKey) {
   throw new Error("MISSING SUPABASE_SERVICE_ROLE_KEY!");
 }
 
-// Función para descargar una imagen desde una URL y devolver un buffer
+// Función para descargar imagen desde URL
 async function downloadImage(url: string): Promise<Buffer> {
   const res = await fetch(url);
   if (!res.ok) {
@@ -119,24 +120,21 @@ export async function POST(request: Request) {
 
   const modelId = insertedModel.id;
 
-  // Descargar las imágenes y comprimirlas en un zip
+  // Descargar las imágenes y crear ZIP
   const zip = new AdmZip();
-
   try {
     for (let i = 0; i < images.length; i++) {
       const imageUrl = images[i];
       const imgBuffer = await downloadImage(imageUrl);
-      // Añadimos cada imagen al zip con un nombre genérico
       zip.addFile(`image_${i}.jpg`, imgBuffer);
     }
   } catch (e: any) {
-    console.error("Error descargando/añadiendo imágenes al ZIP: ", e);
-    // rollback del modelo
+    console.error("Error creando ZIP: ", e);
     await supabaseRoute.from("models").delete().eq("id", modelId);
     return NextResponse.json({ message: "Error procesando imágenes." }, { status: 500 });
   }
 
-  // Ahora subimos el zip a Supabase Storage
+  // Subir ZIP a Supabase Storage
   const supabaseAdmin = createClient<Database>(supabaseUrl!, supabaseServiceRoleKey!, {
     auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
   });
@@ -153,36 +151,67 @@ export async function POST(request: Request) {
 
   if (storageError) {
     console.error("storageError: ", storageError);
-    // rollback del modelo
     await supabaseRoute.from("models").delete().eq("id", modelId);
     return NextResponse.json({ message: "Error subiendo zip." }, { status: 500 });
   }
 
-  // Obtener URL pública del zip
   const {
     data: { publicUrl },
   } = supabaseAdmin.storage.from("zip").getPublicUrl(zipFileName);
 
-  // Guardar samples (guardamos las urls originales)
+  // Guardar samples
   const samples = images.map((uri) => ({ modelId, uri }));
   const { error: samplesError } = await supabaseRoute.from("samples").insert(samples);
   if (samplesError) {
     console.error("samplesError: ", samplesError);
   }
 
-  // Webhook de entrenamiento
-  const trainWebhook = `https://${process.env.VERCEL_URL}/astria/train-webhook?user_id=${user.id}&model_id=${modelId}&webhook_secret=${appWebhookSecret}`;
+  // Crear el modelo en Replicate (privado, gpu-t4)
+  const modelNameSuffix = randomUUID();
+  const replicateModelName = `${name.replace(/\s+/g, '-').toLowerCase()}-${modelNameSuffix}`;
+  
+  const replicateApiKey = process.env.REPLICATE_API_TOKEN;
+  if (!replicateApiKey) {
+    await supabaseRoute.from("models").delete().eq("id", modelId);
+    return NextResponse.json({ message: "Missing REPLICATE_API_TOKEN" }, { status: 500 });
+  }
 
-  // Iniciar el entrenamiento en Replicate
   try {
+    const createModelResponse = await fetch("https://api.replicate.com/v1/models", {
+      method: "POST",
+      headers: {
+        Authorization: `Token ${replicateApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        owner: "arconte112",
+        name: replicateModelName,
+        visibility: "private",
+        hardware: "gpu-t4"
+      }),
+    });
+
+    if (!createModelResponse.ok) {
+      const errorText = await createModelResponse.text();
+      console.error("Error creating model in Replicate:", errorText);
+      await supabaseRoute.from("models").delete().eq("id", modelId);
+      return NextResponse.json({ message: "Error creando el modelo en Replicate" }, { status: 500 });
+    }
+
+    const replicateModelData = await createModelResponse.json();
+
+    // Webhook de entrenamiento
+    const trainWebhook = `https://334a-2001-1308-20e0-4800-eca0-b437-a513-ff1e.ngrok-free.app/astria/train-webhook?user_id=${user.id}&model_id=${modelId}&webhook_secret=${appWebhookSecret}`;
+
+    // Iniciar el entrenamiento en Replicate
     await replicate.trainings.create(
       "ostris",
       "flux-dev-lora-trainer",
       "e440909d3512c31646ee2e0c7d6f6f4923224863a6a10c494606e79fb5844497",
       {
-        destination: `arconte112/${name.replace(/\s+/g, '-').toLowerCase()}`,
+        destination: `arconte112/${replicateModelName}`,
         input: {
-          steps: 1000,
+          steps: 10,
           lora_rank: 16,
           optimizer: "adamw8bit",
           batch_size: 1,
@@ -234,6 +263,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ message: "success" }, { status: 200 });
+
   } catch (e: any) {
     console.error("Error iniciando el entrenamiento en Replicate: ", e);
     // rollback del modelo

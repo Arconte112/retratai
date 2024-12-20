@@ -21,8 +21,11 @@ if (!appWebhookSecret) {
   throw new Error("MISSING APP_WEBHOOK_SECRET!");
 }
 
-// La documentación de Replicate indica que el webhook recibirá un objeto de entrenamiento.
-// Ejemplo: https://replicate.com/docs/reference/http#trainings
+type ReplicateTrainingOutput = {
+  version?: string;
+  weights?: string; // Aquí es donde se espera la URL final
+};
+
 type ReplicateTraining = {
   id: string;
   created_at: string;
@@ -34,17 +37,23 @@ type ReplicateTraining = {
   status: "starting" | "processing" | "succeeded" | "failed" | "canceled";
   input: any;
   error: string | null;
+  output?: ReplicateTrainingOutput; // Se agrega la propiedad output
 };
 
 export async function POST(request: Request) {
+  console.log('🎯 Webhook de entrenamiento recibido');
   const training = (await request.json()) as ReplicateTraining;
+  console.log('📦 Datos de entrenamiento:', JSON.stringify(training, null, 2));
 
   const urlObj = new URL(request.url);
   const user_id = urlObj.searchParams.get("user_id");
   const model_id = urlObj.searchParams.get("model_id");
   const webhook_secret = urlObj.searchParams.get("webhook_secret");
 
+  console.log('🔍 Parámetros URL:', { user_id, model_id, webhook_secret: '***' });
+
   if (!model_id || !user_id || !webhook_secret) {
+    console.error('❌ Parámetros URL faltantes');
     return NextResponse.json(
       { message: "URL mal formada. Faltan parámetros." },
       { status: 500 }
@@ -58,6 +67,7 @@ export async function POST(request: Request) {
     );
   }
 
+  console.log('🔌 Iniciando conexión a Supabase');
   const supabase = createClient<Database>(supabaseUrl!, supabaseServiceRoleKey!, {
     auth: {
       autoRefreshToken: false,
@@ -66,36 +76,53 @@ export async function POST(request: Request) {
     },
   });
 
-  // Verificar el usuario
+  console.log('👤 Verificando usuario:', user_id);
   const {
     data: { user },
     error,
   } = await supabase.auth.admin.getUserById(user_id);
 
   if (error || !user) {
+    console.error('❌ Error verificando usuario:', error);
     return NextResponse.json({ message: "No autorizado." }, { status: 401 });
   }
+  console.log('✅ Usuario verificado:', user.email);
 
-  // Si el entrenamiento ha finalizado con éxito, actualizamos el modelo
   if (training.status === "succeeded") {
-    const { error: modelUpdateError } = await supabase
+    console.log('🎉 Entrenamiento exitoso, actualizando modelo');
+
+    // Ahora tomamos la URL desde training.output.weights
+    if (!training.output || !training.output.weights) {
+      console.error('❌ No se encontró "weights" en el objeto output del entrenamiento');
+      return NextResponse.json(
+        { message: "No se encontró la URL en weights." },
+        { status: 500 }
+      );
+    }
+
+    const hfLoraUrl = training.output.weights;
+    
+    console.log('📝 Actualizando modelo en DB:', { model_id, hfLoraUrl });
+    const { data: modelUpdated, error: modelUpdateError } = await supabase
       .from("models")
       .update({
+        modelId: hfLoraUrl,
         status: "finished",
-        modelId: training.destination, // Guardamos el destino final como el ID del modelo entrenado
       })
-      .eq("id", model_id);
+      .eq("id", model_id)
+      .select();
 
     if (modelUpdateError) {
-      console.error({ modelUpdateError });
+      console.error('❌ Error actualizando modelo:', modelUpdateError);
       return NextResponse.json(
         { message: "Error actualizando el modelo." },
         { status: 500 }
       );
     }
+    console.log('✅ Modelo actualizado correctamente');
 
-    // Opcional: enviar email notificando al usuario que su modelo está listo usando Resend
     if (resendApiKey) {
+      console.log('📧 Enviando email de notificación a:', user.email);
       try {
         const { Resend } = await import("resend");
         const resend = new Resend(resendApiKey);
@@ -105,12 +132,13 @@ export async function POST(request: Request) {
           subject: "Tu modelo está listo",
           html: `<p>Tu modelo ha sido entrenado exitosamente y está listo para usarse.</p>`,
         });
+        console.log('✅ Email enviado correctamente');
       } catch (e) {
-        console.error("Error enviando email: ", e);
+        console.error("❌ Error enviando email: ", e);
       }
     }
   } else if (training.status === "failed" || training.status === "canceled") {
-    // Si falló o se canceló, podemos actualizar el estado del modelo
+    console.log('⚠️ Entrenamiento fallido o cancelado:', training.status);
     const { error: modelUpdateError } = await supabase
       .from("models")
       .update({
@@ -119,13 +147,15 @@ export async function POST(request: Request) {
       .eq("id", model_id);
 
     if (modelUpdateError) {
-      console.error({ modelUpdateError });
+      console.error('❌ Error actualizando estado del modelo:', modelUpdateError);
       return NextResponse.json(
         { message: "Error actualizando estado del modelo tras fallo." },
         { status: 500 }
       );
     }
+    console.log('✅ Estado del modelo actualizado a:', training.status);
   }
 
+  console.log('🏁 Webhook procesado correctamente');
   return NextResponse.json({ message: "OK" }, { status: 200 });
 }
