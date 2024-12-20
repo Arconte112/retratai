@@ -211,7 +211,7 @@ export async function POST(request: Request) {
       {
         destination: `arconte112/${replicateModelName}`,
         input: {
-          steps: 10,
+          steps: 2000,
           lora_rank: 16,
           optimizer: "adamw8bit",
           batch_size: 1,
@@ -219,12 +219,6 @@ export async function POST(request: Request) {
           autocaption: true,
           input_images: publicUrl,
           trigger_word: "TOK",
-          learning_rate: 0.0004,
-          wandb_project: "flux_train_replicate",
-          wandb_save_interval: 100,
-          caption_dropout_rate: 0.05,
-          cache_latents_to_disk: false,
-          wandb_sample_interval: 100,
         },
         webhook: trainWebhook,
         webhook_events_filter: ["completed"],

@@ -19,11 +19,11 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const supabase = createRouteHandlerClient<Database>({ cookies });
-  const { modelId } = await request.json();
+  const { modelId, gender } = await request.json();
 
-  if (!modelId) {
+  if (!modelId || !gender) {
     return NextResponse.json(
-      { message: "Faltan parámetros: modelId." },
+      { message: "Faltan parámetros: modelId o gender." },
       { status: 400 }
     );
   }
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const finalPrompt = "profesional foto of TOK";
+  const finalPrompt = `profesional foto of ohwx ${gender} TOK`;
 
   // Cambiamos el output_format a "png"
   const input = {

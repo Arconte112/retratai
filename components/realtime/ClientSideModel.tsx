@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { supabase } from "@/lib/supabase-client";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const revalidate = 0;
 
@@ -32,6 +33,7 @@ export default function ClientSideModel({
   const [images, setImages] = useState<imageRow[]>(serverImages);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedGender, setSelectedGender] = useState<string>("");
   const { toast } = useToast();
 
   // Suscripción para cambios en el modelo
@@ -76,6 +78,15 @@ export default function ClientSideModel({
   }, [supabase, model.id]);
 
   const handleGenerate = async () => {
+    if (!selectedGender) {
+      toast({
+        title: "Error",
+        description: "Por favor selecciona un género",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsGenerating(true);
     try {
       const response = await fetch("/astria/generate", {
@@ -83,7 +94,10 @@ export default function ClientSideModel({
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ modelId: model.id })
+        body: JSON.stringify({ 
+          modelId: model.id,
+          gender: selectedGender
+        })
       });
       const data = await response.json();
 
@@ -156,10 +170,21 @@ export default function ClientSideModel({
           )}
           <div className="flex flex-col w-full lg:w-1/2 rounded-md">
             {model.status === "finished" && !model.has_generated && (
-              <div className="mb-4">
-                <Button onClick={handleGenerate} disabled={isGenerating}>
-                  {isGenerating ? "Generando..." : "Generar Imágenes"}
-                </Button>
+              <div className="mb-4 flex flex-col gap-4">
+                <div className="flex flex-row items-center gap-4">
+                  <Select onValueChange={setSelectedGender} value={selectedGender}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Selecciona género" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="man">Masculino</SelectItem>
+                      <SelectItem value="woman">Femenino</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={handleGenerate} disabled={isGenerating}>
+                    {isGenerating ? "Generando..." : "Generar Imágenes"}
+                  </Button>
+                </div>
               </div>
             )}
             {model.status === "finished" && model.has_generated && (
