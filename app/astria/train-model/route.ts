@@ -1,35 +1,56 @@
 import { Database } from "@/types/supabase";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import axios from "axios";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import Replicate from "replicate";
+import fetch from "node-fetch";
+import AdmZip from "adm-zip"; // Para comprimir las imágenes
+import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
-const astriaApiKey = process.env.ASTRIA_API_KEY;
-const astriaTestModeIsOn = process.env.ASTRIA_TEST_MODE === "true";
-const packsIsEnabled = process.env.NEXT_PUBLIC_TUNE_TYPE === "packs";
-// For local development, recommend using an Ngrok tunnel for the domain
-
-const appWebhookSecret = process.env.APP_WEBHOOK_SECRET;
 const stripeIsConfigured = process.env.NEXT_PUBLIC_STRIPE_IS_ENABLED === "true";
+const appWebhookSecret = process.env.APP_WEBHOOK_SECRET;
 
 if (!appWebhookSecret) {
   throw new Error("MISSING APP_WEBHOOK_SECRET!");
 }
 
+const replicate = new Replicate({
+  auth: process.env.REPLICATE_API_TOKEN!,
+});
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl) {
+  throw new Error("MISSING NEXT_PUBLIC_SUPABASE_URL!");
+}
+
+if (!supabaseServiceRoleKey) {
+  throw new Error("MISSING SUPABASE_SERVICE_ROLE_KEY!");
+}
+
+// Función para descargar una imagen desde una URL y devolver un buffer
+async function downloadImage(url: string): Promise<Buffer> {
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Failed to download image: ${url}`);
+  }
+  const arrayBuffer = await res.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+}
+
 export async function POST(request: Request) {
   const payload = await request.json();
-  const images = payload.urls;
+  const images: string[] = payload.urls;
   const type = payload.type;
-  const pack = payload.pack;
   const name = payload.name;
 
-  const supabase = createRouteHandlerClient<Database>({ cookies });
-
+  const supabaseRoute = createRouteHandlerClient<Database>({ cookies });
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await supabaseRoute.auth.getUser();
 
   if (!user) {
     return NextResponse.json(
@@ -40,31 +61,17 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!astriaApiKey) {
+  if (images.length < 4) {
     return NextResponse.json(
       {
-        message:
-          "Missing API Key: Add your Astria API Key to generate headshots",
+        message: "Sube al menos 4 imágenes.",
       },
-      {
-        status: 500,
-      }
+      { status: 400 }
     );
   }
 
-  if (images?.length < 4) {
-    return NextResponse.json(
-      {
-        message: "Upload at least 4 sample images",
-      },
-      { status: 500 }
-    );
-  }
-  let _credits = null;
-
-  console.log({ stripeIsConfigured });
   if (stripeIsConfigured) {
-    const { error: creditError, data: credits } = await supabase
+    const { error: creditError, data: credits } = await supabaseRoute
       .from("credits")
       .select("credits")
       .eq("user_id", user.id);
@@ -73,58 +80,31 @@ export async function POST(request: Request) {
       console.error({ creditError });
       return NextResponse.json(
         {
-          message: "Something went wrong!",
+          message: "Error obteniendo créditos.",
         },
         { status: 500 }
       );
     }
 
-    if (credits.length === 0) {
-      // create credits for user.
-      const { error: errorCreatingCredits } = await supabase
-        .from("credits")
-        .insert({
-          user_id: user.id,
-          credits: 0,
-        });
-
-      if (errorCreatingCredits) {
-        console.error({ errorCreatingCredits });
-        return NextResponse.json(
-          {
-            message: "Something went wrong!",
-          },
-          { status: 500 }
-        );
-      }
-
+    if (!credits || credits.length === 0 || credits[0].credits < 1) {
       return NextResponse.json(
         {
           message:
-            "Not enough credits, please purchase some credits and try again.",
+            "No tienes suficientes créditos. Por favor adquiere créditos y vuelve a intentarlo.",
         },
-        { status: 500 }
+        { status: 402 }
       );
-    } else if (credits[0]?.credits < 1) {
-      return NextResponse.json(
-        {
-          message:
-            "Not enough credits, please purchase some credits and try again.",
-        },
-        { status: 500 }
-      );
-    } else {
-      _credits = credits;
     }
   }
 
-  // create a model row in supabase
-  const { error: modelError, data } = await supabase
+  // Crear el modelo en DB con estado "processing"
+  const { error: modelError, data: insertedModel } = await supabaseRoute
     .from("models")
     .insert({
       user_id: user.id,
       name,
       type,
+      status: "processing",
     })
     .select("id")
     .single();
@@ -132,161 +112,135 @@ export async function POST(request: Request) {
   if (modelError) {
     console.error("modelError: ", modelError);
     return NextResponse.json(
-      {
-        message: "Something went wrong!",
-      },
+      { message: "Error creando el modelo en la BD." },
       { status: 500 }
     );
   }
-  
-  // Get the modelId from the created model
-  const modelId = data?.id;
+
+  const modelId = insertedModel.id;
+
+  // Descargar las imágenes y comprimirlas en un zip
+  const zip = new AdmZip();
 
   try {
+    for (let i = 0; i < images.length; i++) {
+      const imageUrl = images[i];
+      const imgBuffer = await downloadImage(imageUrl);
+      // Añadimos cada imagen al zip con un nombre genérico
+      zip.addFile(`image_${i}.jpg`, imgBuffer);
+    }
+  } catch (e: any) {
+    console.error("Error descargando/añadiendo imágenes al ZIP: ", e);
+    // rollback del modelo
+    await supabaseRoute.from("models").delete().eq("id", modelId);
+    return NextResponse.json({ message: "Error procesando imágenes." }, { status: 500 });
+  }
 
-    const trainWebhook = `https://${process.env.VERCEL_URL}/astria/train-webhook`;
-    const trainWebhookWithParams = `${trainWebhook}?user_id=${user.id}&model_id=${modelId}&webhook_secret=${appWebhookSecret}`;
+  // Ahora subimos el zip a Supabase Storage
+  const supabaseAdmin = createClient<Database>(supabaseUrl!, supabaseServiceRoleKey!, {
+    auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+  });
 
-    const promptWebhook = `https://${process.env.VERCEL_URL}/astria/prompt-webhook`;
-    const promptWebhookWithParams = `${promptWebhook}?user_id=${user.id}&&model_id=${modelId}&webhook_secret=${appWebhookSecret}`;
+  const zipBuffer = zip.toBuffer();
+  const zipFileName = `model_${modelId}_${Date.now()}.zip`;
 
-    const API_KEY = astriaApiKey;
-    const DOMAIN = "https://api.astria.ai";
+  const { data: storageData, error: storageError } = await supabaseAdmin.storage
+    .from("zip")
+    .upload(zipFileName, zipBuffer, {
+      contentType: "application/zip",
+      upsert: true,
+    });
 
-    // Create a fine tuned model using Astria tune API
-    const tuneBody = {
-      tune: {
-        title: name,
-        // Hard coded tune id of Realistic Vision v5.1 from the gallery - https://www.astria.ai/gallery/tunes
-        // https://www.astria.ai/gallery/tunes/690204/prompts
-        base_tune_id: 690204,
-        name: type,
-        branch: astriaTestModeIsOn ? "fast" : "sd15",
-        token: "ohwx",
-        image_urls: images,
-        callback: trainWebhookWithParams,
-        prompts_attributes: [
-          {
-            text: `portrait of ohwx ${type} wearing a business suit, professional photo, white background, Amazing Details, Best Quality, Masterpiece, dramatic lighting highly detailed, analog photo, overglaze, 80mm Sigma f/1.4 or any ZEISS lens`,
-            callback: promptWebhookWithParams,
-            num_images: 8,
-          },
-          {
-            text: `8k close up linkedin profile picture of ohwx ${type}, professional jack suite, professional headshots, photo-realistic, 4k, high-resolution image, workplace settings, upper body, modern outfit, professional suit, business, blurred background, glass building, office window`,
-            callback: promptWebhookWithParams,
-            num_images: 8,
-          },
-        ],
-      },
-    };
+  if (storageError) {
+    console.error("storageError: ", storageError);
+    // rollback del modelo
+    await supabaseRoute.from("models").delete().eq("id", modelId);
+    return NextResponse.json({ message: "Error subiendo zip." }, { status: 500 });
+  }
 
-    // Create a fine tuned model using Astria packs API
-    const packBody = {
-      tune: {
-        title: name,
-        name: type,
-        callback: trainWebhookWithParams,
-        prompt_attributes: {
-          callback: promptWebhookWithParams,
-        },
-        image_urls: images,
-      },
-    };
+  // Obtener URL pública del zip
+  const {
+    data: { publicUrl },
+  } = supabaseAdmin.storage.from("zip").getPublicUrl(zipFileName);
 
-    const response = await axios.post(
-      DOMAIN + (packsIsEnabled ? `/p/${pack}/tunes` : "/tunes"),
-      packsIsEnabled ? packBody : tuneBody,
+  // Guardar samples (guardamos las urls originales)
+  const samples = images.map((uri) => ({ modelId, uri }));
+  const { error: samplesError } = await supabaseRoute.from("samples").insert(samples);
+  if (samplesError) {
+    console.error("samplesError: ", samplesError);
+  }
+
+  // Webhook de entrenamiento
+  const trainWebhook = `https://${process.env.VERCEL_URL}/astria/train-webhook?user_id=${user.id}&model_id=${modelId}&webhook_secret=${appWebhookSecret}`;
+
+  // Iniciar el entrenamiento en Replicate
+  try {
+    await replicate.trainings.create(
+      "ostris",
+      "flux-dev-lora-trainer",
+      "e440909d3512c31646ee2e0c7d6f6f4923224863a6a10c494606e79fb5844497",
       {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${API_KEY}`,
+        destination: `arconte112/${name.replace(/\s+/g, '-').toLowerCase()}`,
+        input: {
+          steps: 1000,
+          lora_rank: 16,
+          optimizer: "adamw8bit",
+          batch_size: 1,
+          resolution: "512,768,1024",
+          autocaption: true,
+          input_images: publicUrl,
+          trigger_word: "TOK",
+          learning_rate: 0.0004,
+          wandb_project: "flux_train_replicate",
+          wandb_save_interval: 100,
+          caption_dropout_rate: 0.05,
+          cache_latents_to_disk: false,
+          wandb_sample_interval: 100,
         },
+        webhook: trainWebhook,
+        webhook_events_filter: ["completed"],
       }
     );
 
-    const { status } = response;
-
-    if (status !== 201) {
-      console.error({ status });
-      // Rollback: Delete the created model if something goes wrong
-      if (modelId) {
-        await supabase.from("models").delete().eq("id", modelId);
-      }
-
-      if (status === 400) {
-        return NextResponse.json(
-          {
-            message: "webhookUrl must be a URL address",
-          },
-          { status }
-        );
-      }
-      if (status === 402) {
-        return NextResponse.json(
-          {
-            message: "Training models is only available on paid plans.",
-          },
-          { status }
-        );
-      }
-    }
-
-    const { error: samplesError } = await supabase.from("samples").insert(
-      images.map((sample: string) => ({
-        modelId: modelId,
-        uri: sample,
-      }))
-    );
-
-    if (samplesError) {
-      console.error("samplesError: ", samplesError);
-      return NextResponse.json(
-        {
-          message: "Something went wrong!",
-        },
-        { status: 500 }
-      );
-    }
-
-    if (stripeIsConfigured && _credits && _credits.length > 0) {
-      const subtractedCredits = _credits[0].credits - 1;
-      const { error: updateCreditError, data } = await supabase
+    // Restar créditos si aplica
+    if (stripeIsConfigured) {
+      const { data: currentCredits, error: currentCreditsError } = await supabaseRoute
         .from("credits")
-        .update({ credits: subtractedCredits })
+        .select("*")
         .eq("user_id", user.id)
-        .select("*");
+        .single();
 
-      console.log({ data });
-      console.log({ subtractedCredits });
+      if (currentCreditsError) {
+        console.error({ currentCreditsError });
+        return NextResponse.json(
+          { message: "Error obteniendo créditos." },
+          { status: 500 }
+        );
+      }
+
+      const newCredits = (currentCredits?.credits ?? 0) - 1;
+      const { error: updateCreditError } = await supabaseRoute
+        .from("credits")
+        .update({ credits: newCredits })
+        .eq("user_id", user.id);
 
       if (updateCreditError) {
         console.error({ updateCreditError });
         return NextResponse.json(
-          {
-            message: "Something went wrong!",
-          },
+          { message: "Error actualizando créditos." },
           { status: 500 }
         );
       }
     }
-  } catch (e) {
-    console.error(e);
-    // Rollback: Delete the created model if something goes wrong
-    if (modelId) {
-      await supabase.from("models").delete().eq("id", modelId);
-    }
+
+    return NextResponse.json({ message: "success" }, { status: 200 });
+  } catch (e: any) {
+    console.error("Error iniciando el entrenamiento en Replicate: ", e);
+    // rollback del modelo
+    await supabaseRoute.from("models").delete().eq("id", modelId);
     return NextResponse.json(
-      {
-        message: "Something went wrong!",
-      },
+      { message: "Error iniciando el entrenamiento." },
       { status: 500 }
     );
   }
-
-  return NextResponse.json(
-    {
-      message: "success",
-    },
-    { status: 200 }
-  );
 }

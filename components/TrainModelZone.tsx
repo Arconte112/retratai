@@ -13,13 +13,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -61,7 +54,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
           (file: File) => !files.some((f) => f.name === file.name)
         ) || [];
 
-      // if user tries to upload more than 10 files, display a toast
+      // si el usuario intenta subir más de 10 archivos
       if (newFiles.length + files.length > 10) {
         toast({
           title: "Demasiadas imágenes",
@@ -71,7 +64,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
         return;
       }
 
-      // display a toast if any duplicate files were found
+      // mostrar toast si se encontraron archivos duplicados
       if (newFiles.length !== acceptedFiles.length) {
         toast({
           title: "Nombres de archivo duplicados",
@@ -81,23 +74,21 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
         });
       }
 
-      // check that in total images do not exceed a combined 4.5MB
+      // verificar tamaño total (no más de 4.5MB)
       const totalSize = files.reduce((acc, file) => acc + file.size, 0);
       const newSize = newFiles.reduce((acc, file) => acc + file.size, 0);
 
       if (totalSize + newSize > 4.5 * 1024 * 1024) {
         toast({
           title: "Archivos demasiado grandes",
-          description: "El tamaño total de las imágenes no puede exceder 4.5MB.",
+          description: "El tamaño total no puede exceder 4.5MB.",
           duration: 5000,
         });
         return;
       }
 
-      // check that each file is less than 4MB
-      const tooLargeFiles = newFiles.filter(
-        (file) => file.size > 4 * 1024 * 1024
-      );
+      // cada archivo debe ser menor a 4MB
+      const tooLargeFiles = newFiles.filter((file) => file.size > 4 * 1024 * 1024);
       if (tooLargeFiles.length > 0) {
         toast({
           title: "Archivos demasiado grandes",
@@ -107,7 +98,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
         return;
       }
 
-      // check that each file is an image
+      // cada archivo debe ser imagen
       const nonImageFiles = newFiles.filter(
         (file) => !file.type.startsWith("image/")
       );
@@ -140,10 +131,11 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
 
   const trainModel = useCallback(async () => {
     setIsLoading(true);
-    // Upload each file to Vercel blob and store the resulting URLs
+
     const blobUrls = [];
 
     if (files) {
+      // Subir cada archivo a Vercel Blob
       for (const file of files) {
         const blob = await upload(file.name, file, {
           access: "public",
@@ -153,16 +145,13 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
       }
     }
 
-    // console.log(blobUrls, "blobUrls");
-
     const payload = {
       urls: blobUrls,
       name: form.getValues("name").trim(),
       type: form.getValues("type"),
-      pack: packSlug
+      pack: packSlug,
     };
 
-    // Send the JSON payload to the "/astria/train-model" endpoint
     const response = await fetch("/astria/train-model", {
       method: "POST",
       headers: {
@@ -196,7 +185,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
     toast({
       title: "Modelo en cola para entrenamiento",
       description:
-        "El modelo se ha puesto en cola para entrenamiento. Recibirás un correo electrónico cuando el modelo esté listo para usar.",
+        "El modelo se ha puesto en cola. Recibirás un correo cuando esté listo.",
       duration: 5000,
     });
 
@@ -227,11 +216,11 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
               <FormItem className="w-full rounded-md">
                 <FormLabel>Nombre</FormLabel>
                 <FormDescription>
-                  Déjanos un nombre para que puedas identificarlo fácilmente más tarde.
+                  Pon un nombre para identificar tu modelo.
                 </FormDescription>
                 <FormControl>
                   <Input
-                    placeholder="ej. Fotos de Natalie"
+                    placeholder="ej. Fotos de Juan"
                     {...field}
                     className="max-w-screen-sm"
                     autoComplete="off"
@@ -244,7 +233,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
           <div className="flex flex-col gap-4">
             <FormLabel>Tipo</FormLabel>
             <FormDescription>
-              Selecciona el tipo de fotos que deseas generar.
+              Selecciona el tipo de fotos que quieres generar.
             </FormDescription>
             <RadioGroup
               defaultValue={modelType}
@@ -263,7 +252,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
                 />
                 <Label
                   htmlFor="man"
-                  className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                  className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary"
                 >
                   <FaMale className="mb-3 h-6 w-6" />
                   Hombre
@@ -279,7 +268,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
                 />
                 <Label
                   htmlFor="woman"
-                  className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                  className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary"
                 >
                   <FaFemale className="mb-3 h-6 w-6" />
                   Mujer
@@ -295,7 +284,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
                 />
                 <Label
                   htmlFor="person"
-                  className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                  className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary"
                 >
                   <FaRainbow className="mb-3 h-6 w-6" />
                   Unisex
@@ -309,17 +298,17 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
           >
             <FormLabel>Muestras</FormLabel>
             <FormDescription>
-              Sube 4-10 imágenes de la persona para la que quieres generar fotos.
+              Sube 4-10 imágenes de la persona.
             </FormDescription>
             <div className="outline-dashed outline-2 outline-gray-100 hover:outline-blue-500 w-full h-full rounded-md p-4 flex justify-center align-middle">
               <input {...getInputProps()} />
               {isDragActive ? (
-                <p className="self-center">Suelta los archivos aquí ...</p>
+                <p className="self-center">Suelta los archivos aquí...</p>
               ) : (
                 <div className="flex justify-center flex-col items-center gap-2">
                   <FaImages size={32} className="text-gray-700" />
                   <p className="self-center">
-                    Arrastra y suelta archivos aquí, o haz clic para seleccionar archivos.
+                    Arrastra y suelta archivos, o haz clic para seleccionar.
                   </p>
                 </div>
               )}
@@ -347,8 +336,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
           )}
 
           <Button type="submit" className="w-full" isLoading={isLoading}>
-            Entrenar Modelo{" "}
-            {stripeIsConfigured && <span className="ml-1">(1 Crédito)</span>}
+            Entrenar Modelo {stripeIsConfigured && <span className="ml-1">(1 Crédito)</span>}
           </Button>
         </form>
       </Form>

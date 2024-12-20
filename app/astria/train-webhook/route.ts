@@ -1,21 +1,13 @@
 import { Database } from "@/types/supabase";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
 
 export const dynamic = "force-dynamic";
 
 const resendApiKey = process.env.RESEND_API_KEY;
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
 const appWebhookSecret = process.env.APP_WEBHOOK_SECRET;
-
-if (!resendApiKey) {
-  console.warn(
-    "We detected that the RESEND_API_KEY is missing from your environment variables. The app should still work but email notifications will not be sent. Please add your RESEND_API_KEY to your environment variables if you want to enable email notifications."
-  );
-}
 
 if (!supabaseUrl) {
   throw new Error("MISSING NEXT_PUBLIC_SUPABASE_URL!");
@@ -29,148 +21,111 @@ if (!appWebhookSecret) {
   throw new Error("MISSING APP_WEBHOOK_SECRET!");
 }
 
-export async function POST(request: Request) {
-  type TuneData = {
-    id: number;
-    title: string;
-    name: string;
-    steps: null;
-    trained_at: null;
-    started_training_at: null;
-    created_at: string;
-    updated_at: string;
-    expires_at: null;
+// La documentación de Replicate indica que el webhook recibirá un objeto de entrenamiento.
+// Ejemplo: https://replicate.com/docs/reference/http#trainings
+type ReplicateTraining = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  version: {
+    id: string;
   };
+  destination: string;
+  status: "starting" | "processing" | "succeeded" | "failed" | "canceled";
+  input: any;
+  error: string | null;
+};
 
-  const incomingData = (await request.json()) as { tune: TuneData };
-
-  const { tune } = incomingData;
+export async function POST(request: Request) {
+  const training = (await request.json()) as ReplicateTraining;
 
   const urlObj = new URL(request.url);
   const user_id = urlObj.searchParams.get("user_id");
   const model_id = urlObj.searchParams.get("model_id");
   const webhook_secret = urlObj.searchParams.get("webhook_secret");
 
-  if (!model_id) {
+  if (!model_id || !user_id || !webhook_secret) {
     return NextResponse.json(
-      {
-        message: "Malformed URL, no model_id detected!",
-      },
-      { status: 500 }
-    );
-  }
-  
-
-  if (!webhook_secret) {
-    return NextResponse.json(
-      {
-        message: "Malformed URL, no webhook_secret detected!",
-      },
+      { message: "URL mal formada. Faltan parámetros." },
       { status: 500 }
     );
   }
 
-  if (webhook_secret.toLowerCase() !== appWebhookSecret?.toLowerCase()) {
+  if (webhook_secret.toLowerCase() !== (appWebhookSecret as string).toLowerCase()) {
     return NextResponse.json(
-      {
-        message: "Unauthorized!",
-      },
+      { message: "No autorizado." },
       { status: 401 }
     );
   }
 
-  if (!user_id) {
-    return NextResponse.json(
-      {
-        message: "Malformed URL, no user_id detected!",
-      },
-      { status: 500 }
-    );
-  }
+  const supabase = createClient<Database>(supabaseUrl!, supabaseServiceRoleKey!, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+    },
+  });
 
-  const supabase = createClient<Database>(
-    supabaseUrl as string,
-    supabaseServiceRoleKey as string,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false,
-      },
-    }
-  );
-
+  // Verificar el usuario
   const {
     data: { user },
     error,
   } = await supabase.auth.admin.getUserById(user_id);
 
-  if (error) {
-    return NextResponse.json(
-      {
-        message: error.message,
-      },
-      { status: 401 }
-    );
+  if (error || !user) {
+    return NextResponse.json({ message: "No autorizado." }, { status: 401 });
   }
 
-  if (!user) {
-    return NextResponse.json(
-      {
-        message: "Unauthorized",
-      },
-      { status: 401 }
-    );
-  }
-
-  try {
-    if (resendApiKey) {
-      const resend = new Resend(resendApiKey);
-      await resend.emails.send({
-        from: "noreply@headshots.tryleap.ai",
-        to: user?.email ?? "",
-        subject: "Your model was successfully trained!",
-        html: `<h2>We're writing to notify you that your model training was successful! 1 credit has been used from your account.</h2>`,
-      });
-    }
-
-    const { data: modelUpdated, error: modelUpdatedError } = await supabase
+  // Si el entrenamiento ha finalizado con éxito, actualizamos el modelo
+  if (training.status === "succeeded") {
+    const { error: modelUpdateError } = await supabase
       .from("models")
       .update({
-        modelId: `${tune.id}`,
         status: "finished",
+        modelId: training.destination, // Guardamos el destino final como el ID del modelo entrenado
       })
-      .eq("id", model_id)
-      .select();
+      .eq("id", model_id);
 
-    if (modelUpdatedError) {
-      console.error({ modelUpdatedError });
+    if (modelUpdateError) {
+      console.error({ modelUpdateError });
       return NextResponse.json(
-        {
-          message: "Something went wrong!",
-        },
+        { message: "Error actualizando el modelo." },
         { status: 500 }
       );
     }
 
-    if (!modelUpdated) {
-      console.error("No model updated!");
-      console.error({ modelUpdated });
+    // Opcional: enviar email notificando al usuario que su modelo está listo usando Resend
+    if (resendApiKey) {
+      try {
+        const { Resend } = await import("resend");
+        const resend = new Resend(resendApiKey);
+        await resend.emails.send({
+          from: "noreply@ejemplo.com",
+          to: user.email ?? "",
+          subject: "Tu modelo está listo",
+          html: `<p>Tu modelo ha sido entrenado exitosamente y está listo para usarse.</p>`,
+        });
+      } catch (e) {
+        console.error("Error enviando email: ", e);
+      }
     }
+  } else if (training.status === "failed" || training.status === "canceled") {
+    // Si falló o se canceló, podemos actualizar el estado del modelo
+    const { error: modelUpdateError } = await supabase
+      .from("models")
+      .update({
+        status: training.status,
+      })
+      .eq("id", model_id);
 
-    return NextResponse.json(
-      {
-        message: "success",
-      },
-      { status: 200, statusText: "Success" }
-    );
-  } catch (e) {
-    console.error(e);
-    return NextResponse.json(
-      {
-        message: "Something went wrong!",
-      },
-      { status: 500 }
-    );
+    if (modelUpdateError) {
+      console.error({ modelUpdateError });
+      return NextResponse.json(
+        { message: "Error actualizando estado del modelo tras fallo." },
+        { status: 500 }
+      );
+    }
   }
+
+  return NextResponse.json({ message: "OK" }, { status: 200 });
 }

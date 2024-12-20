@@ -9,14 +9,12 @@ import {
 } from "@/components/ui/card";
 import Link from "next/link";
 import { FaArrowLeft } from "react-icons/fa";
-import { redirect } from "next/navigation";
 
-const packsIsEnabled = process.env.NEXT_PUBLIC_TUNE_TYPE === "packs";
+const packsIsEnabled = true; // ahora solo una tarjeta, si es tu lógica.
 
 export default async function Index() {
-
   if(!packsIsEnabled) {
-    redirect('/overview')
+    return null;
   }
 
   return (
@@ -33,9 +31,9 @@ export default async function Index() {
         </Link>
         <Card>
           <CardHeader>
-            <CardTitle>Galería de Paquetes</CardTitle>
+            <CardTitle>Galería</CardTitle>
             <CardDescription>
-              Elige el tipo de imágenes que deseas crear.
+              Elige el tipo de imágenes que deseas crear. Ahora solo "Fotos profesionales".
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6">
