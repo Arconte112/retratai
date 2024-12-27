@@ -1,13 +1,11 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { Database } from "@/types/supabase";
 import { modelRowWithSamples } from "@/types/utils";
-import { RealtimeChannel } from '@supabase/supabase-js';
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { FaImages } from "react-icons/fa";
 import ModelsTable from "../ModelsTable";
-import { supabase } from "@/lib/supabase-client";
+import { useRouter } from "next/navigation";
 
 const packsIsEnabled = process.env.NEXT_PUBLIC_TUNE_TYPE === "packs";
 
@@ -20,61 +18,20 @@ type ClientSideModelsListProps = {
 export default function ClientSideModelsList({
   serverModels,
 }: ClientSideModelsListProps) {
-  const [models, setModels] = useState<modelRowWithSamples[]>(serverModels);
+  const router = useRouter();
 
   useEffect(() => {
-    console.log('Iniciando suscripción de lista de modelos en tiempo real...');
-    const channel = supabase
-      .channel("realtime-models")
-      .on<Database['public']['Tables']['models']['Row']>(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'models' },
-        async (payload) => {
-          console.log('Evento de lista de modelos recibido:', {
-            tipo: payload.eventType,
-            datos: payload.new || payload.old
-          });
-          if (payload.eventType === "DELETE") {
-            console.log('Modelo eliminado de la lista:', payload.old?.id);
-            setModels((prevModels) => 
-              prevModels.filter((model) => model.id !== payload.old?.id)
-            );
-            return;
-          }
+    // Refrescar la página cada 10 segundos para actualizar la lista de modelos
+    const interval = setInterval(() => {
+      router.refresh();
+    }, 10000);
 
-          console.log('Obteniendo muestras para el modelo:', payload.new.id);
-          const samples = await supabase
-            .from("samples")
-            .select("*")
-            .eq("modelId", payload.new.id);
-
-          const newModel: modelRowWithSamples = {
-            ...payload.new,
-            samples: samples.data || [],
-          };
-
-          console.log('Actualizando lista de modelos con:', newModel);
-          setModels((prevModels) => {
-            const dedupedModels = prevModels.filter(
-              (model) => model.id !== payload.new.id
-            );
-            return [...dedupedModels, newModel];
-          });
-        }
-      )
-      .subscribe((status) => {
-        console.log('Estado de la suscripción de lista de modelos:', status);
-      });
-
-    return () => {
-      console.log('Limpiando suscripción de lista de modelos...');
-      supabase.removeChannel(channel);
-    };
-  }, []);
+    return () => clearInterval(interval);
+  }, [router]);
 
   return (
     <div id="train-model-container" className="w-full">
-      {models && models.length > 0 && (
+      {serverModels && serverModels.length > 0 && (
         <div className="flex flex-col gap-4">
           <div className="flex flex-row gap-4 w-full justify-between items-center text-center">
             <h1>Tus modelos</h1>
@@ -84,10 +41,10 @@ export default function ClientSideModelsList({
               </Button>
             </Link>
           </div>
-          <ModelsTable models={models} />
+          <ModelsTable models={serverModels} />
         </div>
       )}
-      {models && models.length === 0 && (
+      {serverModels && serverModels.length === 0 && (
         <div className="flex flex-col gap-4 items-center">
           <FaImages size={64} className="text-gray-500" />
           <h1 className="text-2xl">

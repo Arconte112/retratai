@@ -116,20 +116,42 @@ export async function POST(request: Request) {
     console.log("✅ Modelo actualizado correctamente");
 
     if (resendApiKey) {
-      console.log("📧 Enviando email de notificación a:", user.email);
+      console.log("📧 Iniciando envío de email");
+      console.log("📧 API Key presente:", resendApiKey.substring(0, 5) + "...");
       try {
         const { Resend } = await import("resend");
         const resend = new Resend(resendApiKey);
-        await resend.emails.send({
-          from: "noreply@ejemplo.com",
+        
+        const emailData = {
+          from: "info@retratai.com",
           to: user.email ?? "",
           subject: "Tu modelo está listo",
           html: `<p>Tu modelo ha sido entrenado exitosamente y está listo para usarse.</p>`,
+        };
+        
+        console.log("📧 Intentando enviar email con datos:", {
+          ...emailData,
+          to: user.email ? user.email.substring(0, 3) + "..." : "no email"
         });
+        
+        const response = await resend.emails.send(emailData);
+        
+        if (response.error) {
+          throw new Error(`Error de Resend: ${response.error.message}`);
+        }
+        
+        console.log("📧 Respuesta de Resend:", response);
         console.log("✅ Email enviado correctamente");
-      } catch (e) {
-        console.error("❌ Error enviando email: ", e);
+      } catch (e: any) {
+        console.error("❌ Error detallado enviando email:", {
+          error: e,
+          message: e.message,
+          name: e.name,
+          stack: e.stack
+        });
       }
+    } else {
+      console.log("⚠️ No se encontró RESEND_API_KEY en las variables de entorno");
     }
   } else if (training.status === "failed" || training.status === "canceled") {
     console.log("⚠️ Entrenamiento fallido o cancelado:", training.status);

@@ -273,7 +273,7 @@ export async function POST(request: Request) {
       {
         destination: `arconte112/${replicateModelName}`,
         input: {
-          steps: 10,
+          steps: 5,
           lora_rank: 16,
           optimizer: "adamw8bit",
           batch_size: 1,

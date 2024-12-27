@@ -22,6 +22,7 @@ import * as z from "zod";
 import { fileUploadFormSchema } from "@/types/zod";
 import { upload } from "@vercel/blob/client";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import TrainingInstructionsModal from "@/components/TrainingInstructionsModal";
 
 type FormInput = z.infer<typeof fileUploadFormSchema>;
 
@@ -30,6 +31,13 @@ const stripeIsConfigured = process.env.NEXT_PUBLIC_STRIPE_IS_ENABLED === "true";
 export default function TrainModelZone({ packSlug }: { packSlug: string }) {
   const [files, setFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showInstructions, setShowInstructions] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const hideInstructions = localStorage.getItem("hideTrainingInstructions");
+      return hideInstructions !== "true";
+    }
+    return true;
+  });
   const { toast } = useToast();
   const router = useRouter();
 
@@ -52,21 +60,21 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
           (file: File) => !files.some((f) => f.name === file.name)
         ) || [];
 
-      // Validar que el total de imágenes no sea menor a 4
-      if (newFiles.length + files.length < 4) {
+      // Validar que el total de imágenes no sea menor a 10
+      if (newFiles.length + files.length < 10) {
         toast({
           title: "Muy pocas imágenes",
-          description: "Debes seleccionar al menos 4 imágenes en total.",
+          description: "Debes seleccionar entre 10 y 15 imágenes en total.",
           duration: 5000,
         });
         return;
       }
 
-      // si el usuario intenta subir más de 10 archivos
-      if (newFiles.length + files.length > 10) {
+      // si el usuario intenta subir más de 15 archivos
+      if (newFiles.length + files.length > 15) {
         toast({
           title: "Demasiadas imágenes",
-          description: "No puedes subir más de 10 imágenes.",
+          description: "Debes seleccionar entre 10 y 15 imágenes en total.",
           duration: 5000,
         });
         return;
@@ -132,11 +140,11 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
 
   const removeFile = useCallback(
     (file: File) => {
-      // Verificar si al eliminar quedarían menos de 4 imágenes
-      if (files.length <= 4) {
+      // Verificar si al eliminar quedarían menos de 10 imágenes
+      if (files.length - 1 < 10) {
         toast({
           title: "No se puede eliminar",
-          description: "Debes mantener al menos 4 imágenes. Puedes reemplazar esta imagen agregando una nueva primero.",
+          description: "Debes mantener al menos 10 imágenes. Puedes reemplazar esta imagen agregando una nueva primero.",
           duration: 5000,
         });
         return;
@@ -154,15 +162,6 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
   );
 
   const clearAllFiles = useCallback(() => {
-    if (files.length <= 4) {
-      toast({
-        title: "No se pueden eliminar las imágenes",
-        description: "Debes mantener al menos 4 imágenes.",
-        duration: 5000,
-      });
-      return;
-    }
-    
     setFiles([]);
     toast({
       title: "Imágenes eliminadas",
@@ -212,7 +211,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
         <div className="flex flex-col gap-4">
           {responseMessage}
           <a href="/get-credits">
-            <Button size="sm">Obtener Créditos</Button>
+            <Button size="sm">Obtener Cr��ditos</Button>
           </a>
         </div>
       );
@@ -245,6 +244,10 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
 
   return (
     <div>
+      <TrainingInstructionsModal
+        isOpen={showInstructions}
+        onClose={() => setShowInstructions(false)}
+      />
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -314,7 +317,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
           >
             <FormLabel>Muestras</FormLabel>
             <FormDescription>
-              Sube 4-10 imágenes de la persona.
+              Sube entre 10 y 15 imágenes de la persona.
             </FormDescription>
             <div className="outline-dashed outline-2 outline-gray-100 hover:outline-blue-500 w-full h-full rounded-md p-4 flex justify-center align-middle">
               <input {...getInputProps()} />
@@ -344,18 +347,20 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
                       size={"sm"}
                       className="w-full"
                       onClick={() => removeFile(file)}
+                      type="button"
                     >
                       Eliminar
                     </Button>
                   </div>
                 ))}
               </div>
-              {files.length > 4 && (
+              {files.length >= 10 && (
                 <Button 
                   variant="destructive" 
                   size="sm"
                   onClick={clearAllFiles}
                   className="w-fit self-end"
+                  type="button"
                 >
                   Eliminar todas las imágenes
                 </Button>
