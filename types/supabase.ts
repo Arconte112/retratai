@@ -35,18 +35,21 @@ export interface Database {
           id: number
           modelId: number
           uri: string
+          original_uri: string | null
         }
         Insert: {
           created_at?: string
           id?: number
           modelId: number
           uri: string
+          original_uri?: string | null
         }
         Update: {
           created_at?: string
           id?: number
           modelId?: number
           uri?: string
+          original_uri?: string | null
         }
         Relationships: [
           {

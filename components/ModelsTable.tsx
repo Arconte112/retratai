@@ -33,7 +33,6 @@ export default async function ModelsTable({ models }: ModelsTableProps) {
           <TableRow>
             <TableHead>Nombre</TableHead>
             <TableHead>Estado</TableHead>
-            <TableHead>Tipo</TableHead>
             <TableHead>Muestras</TableHead>
           </TableRow>
         </TableHeader>
@@ -60,7 +59,6 @@ export default async function ModelsTable({ models }: ModelsTableProps) {
                   </Badge>
                 </div>
               </TableCell>
-              <TableCell>{model.type}</TableCell>
               <TableCell>
                 <div className="flex gap-2 flex-shrink-0 items-center">
                   {model.samples.slice(0, 3).map((sample) => (

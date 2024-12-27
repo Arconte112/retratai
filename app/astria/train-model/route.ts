@@ -7,6 +7,8 @@ import fetch from "node-fetch";
 import AdmZip from "adm-zip";
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { fileTypeFromBuffer } from 'file-type';
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +34,12 @@ if (!supabaseServiceRoleKey) {
   throw new Error("MISSING SUPABASE_SERVICE_ROLE_KEY!");
 }
 
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+
+if (!process.env.GEMINI_API_KEY) {
+  throw new Error("MISSING GEMINI_API_KEY!");
+}
+
 // Función para descargar imagen desde URL
 async function downloadImage(url: string): Promise<Buffer> {
   const res = await fetch(url);
@@ -40,6 +48,50 @@ async function downloadImage(url: string): Promise<Buffer> {
   }
   const arrayBuffer = await res.arrayBuffer();
   return Buffer.from(arrayBuffer);
+}
+
+// Función para detectar el MIME type de una imagen
+async function detectMimeType(buffer: Buffer): Promise<string> {
+  try {
+    const fileType = await fileTypeFromBuffer(buffer);
+    return fileType?.mime || 'application/octet-stream';
+  } catch (error) {
+    console.error('Error detecting MIME type:', error);
+    return 'application/octet-stream';
+  }
+}
+
+// Función para generar caption con Gemini
+async function generateImageCaption(imageBuffer: Buffer): Promise<string> {
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.0-flash-exp",
+  });
+
+  try {
+    const mimeType = await detectMimeType(imageBuffer);
+    
+    // Create the prompt parts array with image and text
+    const prompt = [{
+      inlineData: {
+        mimeType: mimeType,
+        data: imageBuffer.toString('base64')
+      }
+    }, `You are an expert system in creating detailed descriptions of headshots.
+    If the person in the image is a man, start the caption with "a photo of a ohwx man TOK".
+    If the person in the image is a woman, start the caption with "a photo of a ohwx woman TOK".
+    Focus on clothing, landscape, lighting etc.
+    You may describe facial expressions (smiling, angry, etc).
+    Do not describe facial features, body details or other identifying characteristics.
+    Provide only the caption.`];
+
+    // Generate content with the new prompt format
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
+  } catch (error) {
+    console.error('Error generating caption:', error);
+    return '';
+  }
 }
 
 export async function POST(request: Request) {
@@ -127,6 +179,10 @@ export async function POST(request: Request) {
       const imageUrl = images[i];
       const imgBuffer = await downloadImage(imageUrl);
       zip.addFile(`image_${i}.jpg`, imgBuffer);
+      
+      // Generar caption con Gemini
+      const caption = await generateImageCaption(imgBuffer);
+      zip.addFile(`image_${i}.txt`, Buffer.from(caption));
     }
   } catch (e: any) {
     console.error("Error creando ZIP: ", e);
@@ -201,7 +257,7 @@ export async function POST(request: Request) {
     const replicateModelData = await createModelResponse.json();
 
     // Webhook de entrenamiento
-    const trainWebhook = `https://2a37-2001-1308-20af-d300-2412-ee4f-1031-924a.ngrok-free.app/astria/train-webhook?user_id=${user.id}&model_id=${modelId}&webhook_secret=${appWebhookSecret}`;
+    const trainWebhook = `https://df66-2001-1308-2048-6700-cd12-5b98-fc4d-4ff3.ngrok-free.app/astria/train-webhook?user_id=${user.id}&model_id=${modelId}&webhook_secret=${appWebhookSecret}`;
 
     // Iniciar el entrenamiento en Replicate
     await replicate.trainings.create(
@@ -216,7 +272,7 @@ export async function POST(request: Request) {
           optimizer: "adamw8bit",
           batch_size: 1,
           resolution: "512,768,1024",
-          autocaption: true,
+          autocaption: false,
           input_images: publicUrl,
           trigger_word: "TOK",
         },

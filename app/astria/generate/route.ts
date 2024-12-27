@@ -15,18 +15,49 @@ const supabaseAdmin = createClient<Database>(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+async function downloadAndUploadImage(imageUrl: string, userId: string, modelId: string) {
+  try {
+    // Descargar la imagen
+    const response = await fetch(imageUrl);
+    if (!response.ok) throw new Error('Failed to download image');
+    const imageBuffer = await response.arrayBuffer();
+
+    // Generar un nombre único para la imagen
+    const timestamp = Date.now();
+    const randomString = Math.random().toString(36).substring(7);
+    const fileName = `${userId}/${modelId}/${timestamp}-${randomString}.jpg`;
+
+    // Subir a Supabase Storage
+    const { data, error } = await supabaseAdmin
+      .storage
+      .from('generated-images')
+      .upload(fileName, imageBuffer, {
+        contentType: 'image/jpeg',
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) throw error;
+
+    // Obtener la URL pública
+    const { data: { publicUrl } } = supabaseAdmin
+      .storage
+      .from('generated-images')
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  } catch (error) {
+    console.error('Error processing image:', error);
+    return null;
+  }
+}
+
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const supabase = createRouteHandlerClient<Database>({ cookies });
-  const { modelId, gender } = await request.json();
+  const { modelId} = await request.json();
 
-  if (!modelId || !gender) {
-    return NextResponse.json(
-      { message: "Faltan parámetros: modelId o gender." },
-      { status: 400 }
-    );
-  }
 
   const {
     data: { user },
@@ -71,25 +102,20 @@ export async function POST(request: Request) {
     );
   }
 
-  const finalPrompt = `profesional foto of ohwx ${gender} TOK`;
+  const finalPrompt = `Professional photo of a ohwx woman TOK in a black suit smiling`;
 
-  // Cambiamos el output_format a "png"
   const input = {
     prompt: finalPrompt,
-    go_fast: false,
     lora_scale: 1,
-    megapixels: "1",
     num_outputs: 4,
-    aspect_ratio: "1:1",
-    output_format: "png",
-    guidance_scale: 3,
-    output_quality: 80,
+    output_format: "jpg",
+    guidance_scale: 1.8,
+    output_quality: 75,
     prompt_strength: 0.8,
-    extra_lora_scale: 1,
-    num_inference_steps: 28,
+    num_inference_steps: 40,
   };
 
-  console.log("Creando predicción en Replicate con input:", input);
+  let allImages: string[] = [];
 
   // Dividimos el "replicateModel" en owner/model:version
   const [ownerModel, version] = replicateModel.split(":");
@@ -98,43 +124,56 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Error en el ID del modelo." }, { status: 400 });
   }
 
-  // Iniciar predicción
-  let prediction = await replicate.predictions.create({
-    version: version,
-    input: input
-  });
+  // Realizar 4 llamadas para obtener 16 imágenes
+  for (let i = 0; i < 1; i++) {
+    console.log(`Iniciando generación de batch ${i + 1}/1`);
+    
+    // Iniciar predicción
+    let prediction = await replicate.predictions.create({
+      version: version,
+      input: input
+    });
 
-  // Hacer polling hasta que la predicción finalice o falle
-  while (
-    prediction.status !== "succeeded" &&
-    prediction.status !== "failed" &&
-    prediction.status !== "canceled"
-  ) {
-    await new Promise((r) => setTimeout(r, 3000));
-    prediction = await replicate.predictions.get(prediction.id);
+    // Hacer polling hasta que la predicción finalice o falle
+    while (
+      prediction.status !== "succeeded" &&
+      prediction.status !== "failed" &&
+      prediction.status !== "canceled"
+    ) {
+      await new Promise((r) => setTimeout(r, 3000));
+      prediction = await replicate.predictions.get(prediction.id);
+    }
+
+    if (prediction.status !== "succeeded") {
+      console.error(`La predicción del batch ${i + 1} falló:`, prediction.error);
+      continue; // Continuar con el siguiente batch si este falla
+    }
+
+    const output = prediction.output;
+    if (Array.isArray(output) && output.length > 0) {
+      allImages = [...allImages, ...output];
+    }
   }
 
-  if (prediction.status !== "succeeded") {
-    console.error("La predicción falló o fue cancelada:", prediction.error);
+  if (allImages.length === 0) {
     return NextResponse.json(
-      { message: "Error al generar las imágenes." },
+      { message: "No se pudieron generar imágenes." },
       { status: 500 }
     );
   }
 
-  const output = prediction.output;
-  if (!Array.isArray(output) || output.length === 0) {
-    console.error("La respuesta del modelo no es un array de imágenes o está vacía:", output);
-    return NextResponse.json(
-      { message: "La respuesta del modelo no es un array de imágenes o está vacía." },
-      { status: 500 }
-    );
-  }
+  const processedImages = await Promise.all(
+    allImages.map(async (uri) => {
+      const publicUrl = await downloadAndUploadImage(uri, user.id, model.id.toString());
+      return {
+        modelId: model.id,
+        uri: publicUrl || uri, // Usar el URL original como fallback
+        original_uri: uri // Guardar el URL original de Replicate
+      };
+    })
+  );
 
-  const imagesToInsert = output.map((uri) => ({
-    modelId: model.id,
-    uri,
-  }));
+  const imagesToInsert = processedImages.filter(img => img.uri);
 
   // Insertar las imágenes en la BD
   const { error: insertError } = await supabase
@@ -170,7 +209,7 @@ export async function POST(request: Request) {
   console.log("Resultado de la actualización:", updateData);
 
   return NextResponse.json(
-    { message: "Imágenes generadas y guardadas exitosamente.", images: output },
+    { message: "Imágenes generadas y guardadas exitosamente.", images: allImages },
     { status: 200 }
   );
 }

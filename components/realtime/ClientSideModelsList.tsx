@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Database } from "@/types/supabase";
 import { modelRowWithSamples } from "@/types/utils";
+import { RealtimeChannel } from '@supabase/supabase-js';
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FaImages } from "react-icons/fa";
@@ -24,10 +25,17 @@ export default function ClientSideModelsList({
   useEffect(() => {
     const channel = supabase
       .channel("realtime-models")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "models" },
-        async (payload: any) => {
+      .on<Database['public']['Tables']['models']['Row']>(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'models' },
+        async (payload) => {
+          if (payload.eventType === "DELETE") {
+            setModels((prevModels) => 
+              prevModels.filter((model) => model.id !== payload.old?.id)
+            );
+            return;
+          }
+
           const samples = await supabase
             .from("samples")
             .select("*")
@@ -35,14 +43,15 @@ export default function ClientSideModelsList({
 
           const newModel: modelRowWithSamples = {
             ...payload.new,
-            samples: samples.data,
+            samples: samples.data || [],
           };
 
-          const dedupedModels = models.filter(
-            (model) => model.id !== payload.old?.id
-          );
-
-          setModels([...dedupedModels, newModel]);
+          setModels((prevModels) => {
+            const dedupedModels = prevModels.filter(
+              (model) => model.id !== payload.new.id
+            );
+            return [...dedupedModels, newModel];
+          });
         }
       )
       .subscribe();
@@ -50,7 +59,7 @@ export default function ClientSideModelsList({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [models, setModels]);
+  }, []);
 
   return (
     <div id="train-model-container" className="w-full">

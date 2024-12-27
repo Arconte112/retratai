@@ -11,36 +11,20 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/components/ui/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { SubmitHandler, useForm } from "react-hook-form";
-import { FaFemale, FaImages, FaMale, FaRainbow } from "react-icons/fa";
+import { FaImages } from "react-icons/fa";
 import * as z from "zod";
 import { fileUploadFormSchema } from "@/types/zod";
 import { upload } from "@vercel/blob/client";
-import axios from "axios";
-import { Icons } from "@/components/icons";
 
 type FormInput = z.infer<typeof fileUploadFormSchema>;
 
 const stripeIsConfigured = process.env.NEXT_PUBLIC_STRIPE_IS_ENABLED === "true";
-
-const LoadingState = () => (
-  <div className="flex flex-col items-center justify-center p-8 space-y-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-    <div className="relative">
-      <Icons.spinner className="h-12 w-12 animate-spin text-blue-500" />
-    </div>
-    <div className="text-center">
-      <h3 className="font-semibold text-lg">Generando imágenes...</h3>
-      <p className="text-sm text-gray-500">Este proceso puede tomar unos minutos</p>
-    </div>
-  </div>
-);
 
 export default function TrainModelZone({ packSlug }: { packSlug: string }) {
   const [files, setFiles] = useState<File[]>([]);
@@ -52,7 +36,6 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
     resolver: zodResolver(fileUploadFormSchema),
     defaultValues: {
       name: "",
-      type: "man",
     },
   });
 
@@ -66,6 +49,16 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
         acceptedFiles.filter(
           (file: File) => !files.some((f) => f.name === file.name)
         ) || [];
+
+      // Validar que el total de imágenes no sea menor a 4
+      if (newFiles.length + files.length < 4) {
+        toast({
+          title: "Muy pocas imágenes",
+          description: "Debes seleccionar al menos 4 imágenes en total.",
+          duration: 5000,
+        });
+        return;
+      }
 
       // si el usuario intenta subir más de 10 archivos
       if (newFiles.length + files.length > 10) {
@@ -137,10 +130,44 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
 
   const removeFile = useCallback(
     (file: File) => {
+      // Verificar si al eliminar quedarían menos de 4 imágenes
+      if (files.length <= 4) {
+        toast({
+          title: "No se puede eliminar",
+          description: "Debes mantener al menos 4 imágenes. Puedes reemplazar esta imagen agregando una nueva primero.",
+          duration: 5000,
+        });
+        return;
+      }
+      
       setFiles(files.filter((f) => f.name !== file.name));
+      
+      toast({
+        title: "Imagen eliminada",
+        description: `Se eliminó "${file.name}". Quedan ${files.length - 1} imágenes.`,
+        duration: 3000,
+      });
     },
     [files]
   );
+
+  const clearAllFiles = useCallback(() => {
+    if (files.length <= 4) {
+      toast({
+        title: "No se pueden eliminar las imágenes",
+        description: "Debes mantener al menos 4 imágenes.",
+        duration: 5000,
+      });
+      return;
+    }
+    
+    setFiles([]);
+    toast({
+      title: "Imágenes eliminadas",
+      description: "Se eliminaron todas las imágenes correctamente.",
+      duration: 3000,
+    });
+  }, [files]);
 
   const trainModel = useCallback(async () => {
     setIsLoading(true);
@@ -161,7 +188,6 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
     const payload = {
       urls: blobUrls,
       name: form.getValues("name").trim(),
-      type: form.getValues("type"),
       pack: packSlug,
     };
 
@@ -213,8 +239,6 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
     },
   });
 
-  const modelType = form.watch("type");
-
   return (
     <div>
       <Form {...form}>
@@ -243,68 +267,6 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
               </FormItem>
             )}
           />
-          <div className="flex flex-col gap-4">
-            <FormLabel>Tipo</FormLabel>
-            <FormDescription>
-              Selecciona el tipo de fotos que quieres generar.
-            </FormDescription>
-            <RadioGroup
-              defaultValue={modelType}
-              className="grid grid-cols-3 gap-4"
-              value={modelType}
-              onValueChange={(value) => {
-                form.setValue("type", value);
-              }}
-            >
-              <div>
-                <RadioGroupItem
-                  value="man"
-                  id="man"
-                  className="peer sr-only"
-                  aria-label="hombre"
-                />
-                <Label
-                  htmlFor="man"
-                  className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary"
-                >
-                  <FaMale className="mb-3 h-6 w-6" />
-                  Hombre
-                </Label>
-              </div>
-
-              <div>
-                <RadioGroupItem
-                  value="woman"
-                  id="woman"
-                  className="peer sr-only"
-                  aria-label="mujer"
-                />
-                <Label
-                  htmlFor="woman"
-                  className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary"
-                >
-                  <FaFemale className="mb-3 h-6 w-6" />
-                  Mujer
-                </Label>
-              </div>
-
-              <div>
-                <RadioGroupItem
-                  value="person"
-                  id="person"
-                  className="peer sr-only"
-                  aria-label="unisex"
-                />
-                <Label
-                  htmlFor="person"
-                  className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary"
-                >
-                  <FaRainbow className="mb-3 h-6 w-6" />
-                  Unisex
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
           <div
             {...getRootProps()}
             className=" rounded-md justify-center align-middle cursor-pointer flex flex-col gap-4"
@@ -328,34 +290,41 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
             </div>
           </div>
           {files.length > 0 && (
-            <div className="flex flex-row gap-4 flex-wrap">
-              {files.map((file) => (
-                <div key={file.name} className="flex flex-col gap-1">
-                  <img
-                    src={URL.createObjectURL(file)}
-                    className="rounded-md w-24 h-24 object-cover"
-                  />
-                  <Button
-                    variant="outline"
-                    size={"sm"}
-                    className="w-full"
-                    onClick={() => removeFile(file)}
-                    disabled={isLoading}
-                  >
-                    Eliminar
-                  </Button>
-                </div>
-              ))}
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-row gap-4 flex-wrap">
+                {files.map((file) => (
+                  <div key={file.name} className="flex flex-col gap-1">
+                    <img
+                      src={URL.createObjectURL(file)}
+                      className="rounded-md w-24 h-24 object-cover"
+                    />
+                    <Button
+                      variant="outline"
+                      size={"sm"}
+                      className="w-full"
+                      onClick={() => removeFile(file)}
+                    >
+                      Eliminar
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              {files.length > 4 && (
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={clearAllFiles}
+                  className="w-fit self-end"
+                >
+                  Eliminar todas las imágenes
+                </Button>
+              )}
             </div>
           )}
 
-          {isLoading && <LoadingState />}
-
-          {!isLoading && (
-            <Button type="submit" className="w-full">
-              Entrenar Modelo {stripeIsConfigured && <span className="ml-1">(1 Crédito)</span>}
-            </Button>
-          )}
+          <Button type="submit" className="w-full" isLoading={isLoading}>
+            Entrenar Modelo {stripeIsConfigured && <span className="ml-1">(1 Crédito)</span>}
+          </Button>
         </form>
       </Form>
     </div>

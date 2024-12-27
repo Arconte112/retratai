@@ -13,6 +13,7 @@
     "update-types": "npx supabase gen types typescript --project-id \"hzcgbsakzagvgfuektjb\" > types/supabase.ts"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.21.0",
     "@hookform/resolvers": "^3.3.1",
     "@radix-ui/react-aspect-ratio": "^1.0.3",
     "@radix-ui/react-avatar": "^1.0.3",
@@ -45,6 +46,7 @@
     "clsx": "^2.0.0",
     "cmdk": "^0.2.0",
     "disposable-email-domains": "^1.0.62",
+    "file-type": "^19.6.0",
     "formidable": "^3.5.1",
     "jszip": "^3.10.1",
     "lucide-react": "^0.274.0",

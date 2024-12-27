@@ -2,6 +2,7 @@
 
 import { Database } from "@/types/supabase";
 import { creditsRow } from "@/types/utils";
+import { RealtimeChannel } from '@supabase/supabase-js';
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase-client";
 
@@ -16,15 +17,17 @@ export default function ClientSideCredits({
 }: ClientSideCreditsProps) {
   const [credits, setCredits] = useState<creditsRow | null>(creditsRow);
 
-  if (!creditsRow) return <p>Créditos: 0</p>;
-
   useEffect(() => {
     const channel = supabase
-      .channel("realtime credits")
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "credits" },
-        (payload: { new: creditsRow }) => {
+      .channel("realtime-credits")
+      .on<Database['public']['Tables']['credits']['Row']>(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'credits' },
+        (payload) => {
+          if (payload.eventType === "DELETE") {
+            setCredits(null);
+            return;
+          }
           setCredits(payload.new);
         }
       )
@@ -35,7 +38,7 @@ export default function ClientSideCredits({
     };
   }, []);
 
-  if (!credits) return null;
+  if (!credits) return <p>Créditos: 0</p>;
 
   return <p>Créditos: {credits.credits}</p>;
 }
