@@ -18,22 +18,32 @@ export default function ClientSideCredits({
   const [credits, setCredits] = useState<creditsRow | null>(creditsRow);
 
   useEffect(() => {
+    console.log('Iniciando suscripción de créditos en tiempo real...');
     const channel = supabase
       .channel("realtime-credits")
       .on<Database['public']['Tables']['credits']['Row']>(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'credits' },
         (payload) => {
+          console.log('Evento de créditos recibido:', {
+            tipo: payload.eventType,
+            datos: payload.new
+          });
           if (payload.eventType === "DELETE") {
+            console.log('Créditos eliminados');
             setCredits(null);
             return;
           }
+          console.log('Actualizando créditos:', payload.new);
           setCredits(payload.new);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Estado de la suscripción:', status);
+      });
 
     return () => {
+      console.log('Limpiando suscripción de créditos...');
       supabase.removeChannel(channel);
     };
   }, []);

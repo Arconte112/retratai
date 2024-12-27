@@ -36,61 +36,6 @@ export default function ClientSideModel({
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Suscripción para cambios en el modelo
-  useEffect(() => {
-    const modelChannel = supabase
-      .channel("realtime-model")
-      .on<Database['public']['Tables']['models']['Row']>(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'models', filter: `id=eq.${model.id}` },
-        (payload) => {
-          if (payload.eventType === "DELETE") {
-            return;
-          }
-          setModel(payload.new);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(modelChannel);
-    };
-  }, [model.id]);
-
-  // Suscripción para cambios en las imágenes
-  useEffect(() => {
-    const imagesChannel = supabase
-      .channel("realtime-images")
-      .on<Database['public']['Tables']['images']['Row']>(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'images',
-          filter: `modelId=eq.${model.id}`,
-        },
-        (payload) => {
-          if (payload.eventType === "DELETE") {
-            setImages((prev) => prev.filter(img => img.id !== payload.old?.id));
-            return;
-          }
-          if (payload.eventType === "INSERT") {
-            setImages((prev) => [...prev, payload.new]);
-          }
-          if (payload.eventType === "UPDATE") {
-            setImages((prev) => 
-              prev.map(img => img.id === payload.new.id ? payload.new : img)
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(imagesChannel);
-    };
-  }, [model.id]);
-
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
@@ -112,11 +57,21 @@ export default function ClientSideModel({
           variant: "destructive",
         });
       } else {
+        // Actualizar el estado local con las nuevas imágenes
+        const newImages = data.images.map((uri: string) => ({
+          id: Math.random().toString(), // ID temporal
+          modelId: model.id,
+          uri: uri,
+          original_uri: uri
+        }));
+        
+        setImages((prev) => [...prev, ...newImages]);
+        setModel((prev) => ({ ...prev, has_generated: true }));
+
         toast({
           title: "Éxito",
           description: "Las imágenes se generaron correctamente.",
         });
-        setModel((prev) => ({ ...prev, has_generated: true }));
       }
     } catch (error: any) {
       console.error("Error llamando a la API /astria/generate:", error);
@@ -154,48 +109,52 @@ export default function ClientSideModel({
   return (
     <div id="train-model-container" className="w-full h-full">
       <div className="flex flex-col w-full mt-4 gap-8">
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-0">
+        <div className="flex flex-col lg:flex-row gap-8">
           {samples && (
-            <div className="flex w-full lg:w-1/2 flex-col gap-2">
-              <h2 className="text-xl">Training Data</h2>
-              <div className="flex flex-row gap-4 flex-wrap">
+            <div className="flex w-full lg:w-1/2 flex-col gap-4">
+              <h2 className="text-lg text-gray-500">Datos de Entrenamiento</h2>
+              <div className="flex flex-row gap-3 flex-wrap justify-start">
                 {samples.map((sample) => (
                   <img
                     key={sample.id}
                     src={sample.uri}
-                    className="rounded-md w-60 h-60 object-cover"
-                    alt="sample"
+                    className="rounded-md w-48 h-48 object-cover"
+                    alt="muestra"
                   />
                 ))}
               </div>
             </div>
           )}
-              <div className="flex flex-col w-full lg:w-1/2 rounded-md">
-                {model.status === "finished" && !model.has_generated && (
-                  <div className="mb-4 flex flex-col gap-4">
-                    <div className="flex flex-row items-center gap-4">
-                      <Button onClick={handleGenerate} disabled={isGenerating}>
-                        {isGenerating ? "Generando..." : "Generar Imágenes"}
-                      </Button>
-                    </div>
-                  </div>
-              )}
+          <div className="flex flex-col w-full lg:w-1/2 rounded-md">
+            {model.status === "finished" && !model.has_generated && (
+              <div className="mb-4 flex flex-col gap-4">
+                <h2 className="text-2xl font-semibold">Generar Imágenes</h2>
+                <div className="flex flex-row items-center gap-4">
+                  <Button onClick={handleGenerate} disabled={isGenerating}>
+                    {isGenerating ? "Generando..." : "Generar Imágenes"}
+                  </Button>
+                </div>
+              </div>
+            )}
             {model.status === "finished" && model.has_generated && (
-              <div className="flex flex-1 flex-col gap-2">
-                <h1 className="text-xl">Resultados</h1>
+              <div className="flex flex-1 flex-col gap-4">
+                <h2 className="text-2xl font-semibold">Resultados</h2>
                 <div className="flex flex-row flex-wrap gap-4">
                   {images.map((image) => (
-                    <div key={image.id} className="relative group">
+                    <div 
+                      key={image.id} 
+                      className="relative group opacity-0 animate-fadeIn"
+                    >
                       <img
                         src={image.uri}
-                        className="rounded-md w-60 object-cover cursor-pointer transition-transform hover:scale-105"
+                        className="rounded-md w-60 h-60 object-cover cursor-pointer transition-all duration-300 hover:scale-105"
                         alt="generada"
                         onClick={() => setSelectedImage(image.uri)}
                       />
                       <Button
                         variant="secondary"
                         size="icon"
-                        className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                         onClick={() => handleDownload(image.uri)}
                       >
                         <Icons.download className="h-4 w-4" />

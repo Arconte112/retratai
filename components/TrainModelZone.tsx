@@ -21,6 +21,7 @@ import { FaImages } from "react-icons/fa";
 import * as z from "zod";
 import { fileUploadFormSchema } from "@/types/zod";
 import { upload } from "@vercel/blob/client";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 type FormInput = z.infer<typeof fileUploadFormSchema>;
 
@@ -36,6 +37,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
     resolver: zodResolver(fileUploadFormSchema),
     defaultValues: {
       name: "",
+      gender: undefined,
     },
   });
 
@@ -189,6 +191,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
       urls: blobUrls,
       name: form.getValues("name").trim(),
       pack: packSlug,
+      gender: form.getValues("gender"),
     };
 
     const response = await fetch("/astria/train-model", {
@@ -228,7 +231,8 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
       duration: 5000,
     });
 
-    router.push("/");
+    router.refresh();
+    router.push("/overview");
   }, [files]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -262,6 +266,43 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
                     className="max-w-screen-sm"
                     autoComplete="off"
                   />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="gender"
+            render={({ field }) => (
+              <FormItem className="space-y-3">
+                <FormLabel>Género</FormLabel>
+                <FormDescription>
+                  Selecciona el género para la generación de imágenes.
+                </FormDescription>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    className="flex flex-col space-y-1"
+                  >
+                    <FormItem className="flex items-center space-x-3 space-y-0">
+                      <FormControl>
+                        <RadioGroupItem value="man" />
+                      </FormControl>
+                      <FormLabel className="font-normal">
+                        Hombre
+                      </FormLabel>
+                    </FormItem>
+                    <FormItem className="flex items-center space-x-3 space-y-0">
+                      <FormControl>
+                        <RadioGroupItem value="woman" />
+                      </FormControl>
+                      <FormLabel className="font-normal">
+                        Mujer
+                      </FormLabel>
+                    </FormItem>
+                  </RadioGroup>
                 </FormControl>
                 <FormMessage />
               </FormItem>

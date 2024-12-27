@@ -69,7 +69,8 @@ export interface Database {
           status: string
           type: string | null
           user_id: string | null
-          has_generated: boolean // ← Agregar aquí
+          has_generated: boolean
+          gender: "man" | "woman"
         }
         Insert: {
           created_at?: string
@@ -79,7 +80,8 @@ export interface Database {
           status?: string
           type?: string | null
           user_id?: string | null
-          has_generated?: boolean // ← Agregar aquí
+          has_generated?: boolean
+          gender: "man" | "woman"
         }
         Update: {
           created_at?: string
@@ -89,7 +91,8 @@ export interface Database {
           status?: string
           type?: string | null
           user_id?: string | null
-          has_generated?: boolean // ← Agregar aquí
+          has_generated?: boolean
+          gender?: "man" | "woman"
         }
         Relationships: [
           {

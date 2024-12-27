@@ -102,7 +102,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const finalPrompt = `Professional photo of a ohwx woman TOK in a black suit smiling`;
+  const finalPrompt = `Professional photo of a ohwx ${model.gender} TOK in a black suit smiling`;
 
   const input = {
     prompt: finalPrompt,

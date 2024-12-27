@@ -23,19 +23,26 @@ export default function ClientSideModelsList({
   const [models, setModels] = useState<modelRowWithSamples[]>(serverModels);
 
   useEffect(() => {
+    console.log('Iniciando suscripción de lista de modelos en tiempo real...');
     const channel = supabase
       .channel("realtime-models")
       .on<Database['public']['Tables']['models']['Row']>(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'models' },
         async (payload) => {
+          console.log('Evento de lista de modelos recibido:', {
+            tipo: payload.eventType,
+            datos: payload.new || payload.old
+          });
           if (payload.eventType === "DELETE") {
+            console.log('Modelo eliminado de la lista:', payload.old?.id);
             setModels((prevModels) => 
               prevModels.filter((model) => model.id !== payload.old?.id)
             );
             return;
           }
 
+          console.log('Obteniendo muestras para el modelo:', payload.new.id);
           const samples = await supabase
             .from("samples")
             .select("*")
@@ -46,6 +53,7 @@ export default function ClientSideModelsList({
             samples: samples.data || [],
           };
 
+          console.log('Actualizando lista de modelos con:', newModel);
           setModels((prevModels) => {
             const dedupedModels = prevModels.filter(
               (model) => model.id !== payload.new.id
@@ -54,9 +62,12 @@ export default function ClientSideModelsList({
           });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Estado de la suscripción de lista de modelos:', status);
+      });
 
     return () => {
+      console.log('Limpiando suscripción de lista de modelos...');
       supabase.removeChannel(channel);
     };
   }, []);

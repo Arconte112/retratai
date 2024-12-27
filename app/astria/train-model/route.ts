@@ -94,10 +94,16 @@ async function generateImageCaption(imageBuffer: Buffer): Promise<string> {
   }
 }
 
+type TrainModelPayload = {
+  urls: string[];
+  name: string;
+  pack: string;
+  gender: "man" | "woman";
+};
+
 export async function POST(request: Request) {
-  const payload = await request.json();
+  const payload = (await request.json()) as TrainModelPayload;
   const images: string[] = payload.urls;
-  const type = payload.type;
   const name = payload.name;
 
   const supabaseRoute = createRouteHandlerClient<Database>({ cookies });
@@ -156,8 +162,8 @@ export async function POST(request: Request) {
     .insert({
       user_id: user.id,
       name,
-      type,
       status: "processing",
+      gender: payload.gender,
     })
     .select("id")
     .single();
@@ -257,7 +263,7 @@ export async function POST(request: Request) {
     const replicateModelData = await createModelResponse.json();
 
     // Webhook de entrenamiento
-    const trainWebhook = `https://df66-2001-1308-2048-6700-cd12-5b98-fc4d-4ff3.ngrok-free.app/astria/train-webhook?user_id=${user.id}&model_id=${modelId}&webhook_secret=${appWebhookSecret}`;
+    const trainWebhook = `https://5a57-2001-1308-2907-2c00-a9fb-641c-9051-c42a.ngrok-free.app/astria/train-webhook?user_id=${user.id}&model_id=${modelId}&webhook_secret=${appWebhookSecret}`;
 
     // Iniciar el entrenamiento en Replicate
     await replicate.trainings.create(
@@ -267,7 +273,7 @@ export async function POST(request: Request) {
       {
         destination: `arconte112/${replicateModelName}`,
         input: {
-          steps: 2000,
+          steps: 10,
           lora_rank: 16,
           optimizer: "adamw8bit",
           batch_size: 1,
