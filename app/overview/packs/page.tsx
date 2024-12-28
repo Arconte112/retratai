@@ -12,6 +12,8 @@ import { FaArrowLeft } from "react-icons/fa";
 
 const packsIsEnabled = true; // ahora solo una tarjeta, si es tu lógica.
 
+export const dynamic = "force-dynamic";
+
 export default async function Index() {
   if(!packsIsEnabled) {
     return null;

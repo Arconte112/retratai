@@ -12,6 +12,8 @@ import { FaArrowLeft } from "react-icons/fa";
 
 const packsIsEnabled = process.env.NEXT_PUBLIC_TUNE_TYPE === "packs";
 
+export const dynamic = "force-dynamic";
+
 export default async function Index({ params }: { params: { pack : string } }) {
   
   return (
