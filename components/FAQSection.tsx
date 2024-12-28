@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface FAQItem {
   question: string;
@@ -92,39 +93,80 @@ export default function FAQSection() {
   ];
 
   return (
-    <div className="w-full max-w-6xl mt-16 mb-16 p-8 space-y-8">
-      <h2 className="text-3xl font-bold text-center mb-8">Preguntas Frecuentes</h2>
+    <div className="w-full max-w-6xl mx-auto mt-16 mb-16 px-4 md:px-8">
+      <div className="text-center mb-12">
+        <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          Preguntas Frecuentes
+        </h2>
+        <p className="mt-4 text-gray-600">
+          Encuentra respuestas a las preguntas más comunes sobre nuestro servicio
+        </p>
+      </div>
       
-      {faqs.map((category, categoryIndex) => (
-        <div key={categoryIndex} className="space-y-4">
-          <h3 className="text-xl font-semibold mb-4">{category.category}</h3>
-          <div className="space-y-2">
-            {category.items.map((item, itemIndex) => {
-              const key = `${categoryIndex}-${itemIndex}`;
-              const isOpen = openItems[key];
+      <div className="grid gap-8 md:grid-cols-2">
+        {faqs.map((category, categoryIndex) => (
+          <div key={categoryIndex} className="space-y-4">
+            <h3 className="text-2xl font-semibold text-gray-800 mb-6">
+              {category.category}
+            </h3>
+            <div className="space-y-4">
+              {category.items.map((item, itemIndex) => {
+                const key = `${categoryIndex}-${itemIndex}`;
+                const isOpen = openItems[key];
 
-              return (
-                <div key={itemIndex} className="border rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => toggleItem(categoryIndex, itemIndex)}
-                    className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center"
+                return (
+                  <motion.div
+                    key={itemIndex}
+                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200"
+                    initial={false}
                   >
-                    <span className="font-medium">{item.question}</span>
-                    <span className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`}>
-                      ▼
-                    </span>
-                  </button>
-                  {isOpen && (
-                    <div className="px-4 py-3 bg-white">
-                      {item.answer}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                    <button
+                      onClick={() => toggleItem(categoryIndex, itemIndex)}
+                      className="w-full text-left px-6 py-4 flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded-xl"
+                    >
+                      <span className="font-medium text-gray-900">{item.question}</span>
+                      <motion.span
+                        animate={{ rotate: isOpen ? 180 : 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="text-blue-500"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </motion.span>
+                    </button>
+                    <AnimatePresence>
+                      {isOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="px-6 pb-4 text-gray-600">
+                            {item.answer}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 } 
