@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/lib/supabase-client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { motion } from "framer-motion";
 
 export const revalidate = 0;
 
@@ -57,9 +58,8 @@ export default function ClientSideModel({
           variant: "destructive",
         });
       } else {
-        // Actualizar el estado local con las nuevas imágenes
         const newImages = data.images.map((uri: string) => ({
-          id: Math.random().toString(), // ID temporal
+          id: Math.random().toString(),
           modelId: model.id,
           uri: uri,
           original_uri: uri
@@ -107,67 +107,111 @@ export default function ClientSideModel({
   };
 
   return (
-    <div id="train-model-container" className="w-full h-full">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="w-full h-full"
+    >
       <div className="flex flex-col w-full mt-4 gap-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {samples && (
-            <div className="flex w-full lg:w-1/2 flex-col gap-4">
-              <h2 className="text-lg text-gray-500">Datos de Entrenamiento</h2>
-              <div className="flex flex-row gap-3 flex-wrap justify-start">
-                {samples.map((sample) => (
-                  <img
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="flex w-full lg:w-1/2 flex-col gap-4"
+            >
+              <h2 className="text-xl font-semibold text-gray-800">Datos de Entrenamiento</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {samples.map((sample, index) => (
+                  <motion.div
                     key={sample.id}
-                    src={sample.uri}
-                    className="rounded-md w-48 h-48 object-cover"
-                    alt="muestra"
-                  />
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                  >
+                    <img
+                      src={sample.uri}
+                      className="rounded-lg w-full aspect-square object-cover shadow-sm hover:shadow-md transition-shadow duration-200"
+                      alt="muestra"
+                    />
+                  </motion.div>
                 ))}
               </div>
-            </div>
+            </motion.div>
           )}
-          <div className="flex flex-col w-full lg:w-1/2 rounded-md">
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="flex flex-col w-full lg:w-1/2 rounded-lg"
+          >
             {model.status === "finished" && !model.has_generated && (
               <div className="mb-4 flex flex-col gap-4">
-                <h2 className="text-2xl font-semibold">Generar Imágenes</h2>
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Generar Imágenes
+                </h2>
                 <div className="flex flex-row items-center gap-4">
-                  <Button onClick={handleGenerate} disabled={isGenerating}>
-                    {isGenerating ? "Generando..." : "Generar Imágenes"}
+                  <Button 
+                    onClick={handleGenerate} 
+                    disabled={isGenerating}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                        Generando...
+                      </>
+                    ) : (
+                      "Generar Imágenes"
+                    )}
                   </Button>
                 </div>
               </div>
             )}
             {model.status === "finished" && model.has_generated && (
               <div className="flex flex-1 flex-col gap-4">
-                <h2 className="text-2xl font-semibold">Resultados</h2>
-                <div className="flex flex-row flex-wrap gap-4">
-                  {images.map((image) => (
-                    <div 
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Resultados
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {images.map((image, index) => (
+                    <motion.div 
                       key={image.id} 
-                      className="relative group opacity-0 animate-fadeIn"
+                      className="relative group"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
                     >
                       <img
                         src={image.uri}
-                        className="rounded-md w-60 h-60 object-cover cursor-pointer transition-all duration-300 hover:scale-105"
+                        className="rounded-lg w-full aspect-square object-cover shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
                         alt="generada"
                         onClick={() => setSelectedImage(image.uri)}
                       />
                       <Button
                         variant="secondary"
                         size="icon"
-                        className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                        className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/90 hover:bg-white shadow-md"
                         onClick={() => handleDownload(image.uri)}
                       >
                         <Icons.download className="h-4 w-4" />
                       </Button>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               </div>
             )}
             {model.status !== "finished" && (
-              <p>El modelo aún no está listo. Por favor espera a que finalice el entrenamiento.</p>
+              <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-lg border border-gray-200">
+                <Icons.spinner className="h-8 w-8 animate-spin text-blue-600 mb-4" />
+                <p className="text-gray-600 text-center">
+                  El modelo aún está en entrenamiento. Por favor espera a que finalice.
+                </p>
+              </div>
             )}
-          </div>
+          </motion.div>
         </div>
       </div>
 
@@ -181,12 +225,12 @@ export default function ClientSideModel({
               <img
                 src={selectedImage}
                 alt="Vista previa"
-                className="w-full h-auto rounded-lg"
+                className="w-full h-auto rounded-lg shadow-lg"
               />
               <Button
                 variant="secondary"
                 size="icon"
-                className="absolute bottom-4 right-4"
+                className="absolute bottom-4 right-4 bg-white/90 hover:bg-white shadow-md"
                 onClick={() => handleDownload(selectedImage)}
               >
                 <Icons.download className="h-4 w-4" />
@@ -195,6 +239,6 @@ export default function ClientSideModel({
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </motion.div>
   );
 }

@@ -17,12 +17,13 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { SubmitHandler, useForm } from "react-hook-form";
-import { FaImages } from "react-icons/fa";
+import { FaImages, FaUpload, FaTrash } from "react-icons/fa";
 import * as z from "zod";
 import { fileUploadFormSchema } from "@/types/zod";
-import { upload } from "@vercel/blob/client";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import TrainingInstructionsModal from "@/components/TrainingInstructionsModal";
+import { upload } from "@vercel/blob/client";
+import { motion } from "framer-motion";
 
 type FormInput = z.infer<typeof fileUploadFormSchema>;
 
@@ -60,7 +61,6 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
           (file: File) => !files.some((f) => f.name === file.name)
         ) || [];
 
-      // Validar que el total de imágenes no sea menor a 10
       if (newFiles.length + files.length < 10) {
         toast({
           title: "Muy pocas imágenes",
@@ -70,7 +70,6 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
         return;
       }
 
-      // si el usuario intenta subir más de 15 archivos
       if (newFiles.length + files.length > 15) {
         toast({
           title: "Demasiadas imágenes",
@@ -80,7 +79,6 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
         return;
       }
 
-      // mostrar toast si se encontraron archivos duplicados
       if (newFiles.length !== acceptedFiles.length) {
         toast({
           title: "Nombres de archivo duplicados",
@@ -90,7 +88,6 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
         });
       }
 
-      // verificar tamaño total (no más de 4.5MB)
       const totalSize = files.reduce((acc, file) => acc + file.size, 0);
       const newSize = newFiles.reduce((acc, file) => acc + file.size, 0);
 
@@ -103,7 +100,6 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
         return;
       }
 
-      // cada archivo debe ser menor a 4MB
       const tooLargeFiles = newFiles.filter((file) => file.size > 4 * 1024 * 1024);
       if (tooLargeFiles.length > 0) {
         toast({
@@ -114,7 +110,6 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
         return;
       }
 
-      // cada archivo debe ser imagen
       const nonImageFiles = newFiles.filter(
         (file) => !file.type.startsWith("image/")
       );
@@ -135,12 +130,11 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
         duration: 5000,
       });
     },
-    [files]
+    [files, toast]
   );
 
   const removeFile = useCallback(
     (file: File) => {
-      // Verificar si al eliminar quedarían menos de 10 imágenes
       if (files.length - 1 < 10) {
         toast({
           title: "No se puede eliminar",
@@ -158,7 +152,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
         duration: 3000,
       });
     },
-    [files]
+    [files, toast]
   );
 
   const clearAllFiles = useCallback(() => {
@@ -168,7 +162,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
       description: "Se eliminaron todas las imágenes correctamente.",
       duration: 3000,
     });
-  }, [files]);
+  }, [toast]);
 
   const trainModel = useCallback(async () => {
     setIsLoading(true);
@@ -176,7 +170,6 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
     const blobUrls = [];
 
     if (files) {
-      // Subir cada archivo a Vercel Blob
       for (const file of files) {
         const blob = await upload(file.name, file, {
           access: "public",
@@ -211,7 +204,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
         <div className="flex flex-col gap-4">
           {responseMessage}
           <a href="/get-credits">
-            <Button size="sm">Obtener Cr��ditos</Button>
+            <Button size="sm">Obtener Créditos</Button>
           </a>
         </div>
       );
@@ -232,7 +225,7 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
 
     router.refresh();
     router.push("/overview");
-  }, [files]);
+  }, [files, form, packSlug, router, toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -251,126 +244,197 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="rounded-md flex flex-col gap-8"
+          className="flex flex-col gap-8"
         >
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem className="w-full rounded-md">
-                <FormLabel>Nombre</FormLabel>
-                <FormDescription>
-                  Pon un nombre para identificar tu modelo.
-                </FormDescription>
-                <FormControl>
-                  <Input
-                    placeholder="ej. Fotos de Juan"
-                    {...field}
-                    className="max-w-screen-sm"
-                    autoComplete="off"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="gender"
-            render={({ field }) => (
-              <FormItem className="space-y-3">
-                <FormLabel>Género</FormLabel>
-                <FormDescription>
-                  Selecciona el género para la generación de imágenes.
-                </FormDescription>
-                <FormControl>
-                  <RadioGroup
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    className="flex flex-col space-y-1"
-                  >
-                    <FormItem className="flex items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <RadioGroupItem value="man" />
-                      </FormControl>
-                      <FormLabel className="font-normal">
-                        Hombre
-                      </FormLabel>
-                    </FormItem>
-                    <FormItem className="flex items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <RadioGroupItem value="woman" />
-                      </FormControl>
-                      <FormLabel className="font-normal">
-                        Mujer
-                      </FormLabel>
-                    </FormItem>
-                  </RadioGroup>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div
-            {...getRootProps()}
-            className=" rounded-md justify-center align-middle cursor-pointer flex flex-col gap-4"
-          >
-            <FormLabel>Muestras</FormLabel>
-            <FormDescription>
-              Sube entre 10 y 15 imágenes de la persona.
-            </FormDescription>
-            <div className="outline-dashed outline-2 outline-gray-100 hover:outline-blue-500 w-full h-full rounded-md p-4 flex justify-center align-middle">
-              <input {...getInputProps()} />
-              {isDragActive ? (
-                <p className="self-center">Suelta los archivos aquí...</p>
-              ) : (
-                <div className="flex justify-center flex-col items-center gap-2">
-                  <FaImages size={32} className="text-gray-700" />
-                  <p className="self-center">
-                    Arrastra y suelta archivos, o haz clic para seleccionar.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-          {files.length > 0 && (
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-row gap-4 flex-wrap">
-                {files.map((file) => (
-                  <div key={file.name} className="flex flex-col gap-1">
-                    <img
-                      src={URL.createObjectURL(file)}
-                      className="rounded-md w-24 h-24 object-cover"
-                    />
-                    <Button
-                      variant="outline"
-                      size={"sm"}
-                      className="w-full"
-                      onClick={() => removeFile(file)}
-                      type="button"
-                    >
-                      Eliminar
-                    </Button>
-                  </div>
-                ))}
-              </div>
-              {files.length >= 10 && (
-                <Button 
-                  variant="destructive" 
-                  size="sm"
-                  onClick={clearAllFiles}
-                  className="w-fit self-end"
-                  type="button"
-                >
-                  Eliminar todas las imágenes
-                </Button>
-              )}
-            </div>
-          )}
+          <div className="grid md:grid-cols-2 gap-8">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+              className="space-y-6"
+            >
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base font-semibold">Nombre del Modelo</FormLabel>
+                    <FormDescription>
+                      Pon un nombre descriptivo para identificar tu modelo
+                    </FormDescription>
+                    <FormControl>
+                      <Input
+                        placeholder="ej. Fotos de Juan"
+                        {...field}
+                        className="text-base"
+                        autoComplete="off"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <Button type="submit" className="w-full" isLoading={isLoading}>
-            Entrenar Modelo {stripeIsConfigured && <span className="ml-1">(1 Crédito)</span>}
-          </Button>
+              <FormField
+                control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel className="text-base font-semibold">Género</FormLabel>
+                    <FormDescription>
+                      Selecciona el género para optimizar la generación
+                    </FormDescription>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex flex-col space-y-3"
+                      >
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="man" />
+                          </FormControl>
+                          <FormLabel className="font-normal text-base">
+                            Hombre
+                          </FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="woman" />
+                          </FormControl>
+                          <FormLabel className="font-normal text-base">
+                            Mujer
+                          </FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+              className="space-y-6"
+            >
+              <div>
+                <FormLabel className="text-base font-semibold">Imágenes de Muestra</FormLabel>
+                <FormDescription>
+                  Sube entre 10 y 15 imágenes de la persona
+                </FormDescription>
+                <div
+                  {...getRootProps()}
+                  className="mt-3 rounded-xl border-2 border-dashed border-gray-200 hover:border-blue-400 transition-colors duration-200 cursor-pointer"
+                >
+                  <div className="flex flex-col items-center justify-center py-8 px-4">
+                    <input {...getInputProps()} />
+                    {isDragActive ? (
+                      <div className="text-center">
+                        <FaUpload className="w-8 h-8 text-blue-500 mx-auto mb-3" />
+                        <p className="text-blue-600 font-medium">
+                          Suelta las imágenes aquí...
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <FaImages className="w-8 h-8 text-gray-400 mx-auto mb-3" />
+                        <p className="text-gray-600">
+                          Arrastra y suelta imágenes aquí, o haz clic para seleccionar
+                        </p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          PNG o JPG (máx. 4MB por imagen)
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {files.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-4"
+                >
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {files.map((file, index) => (
+                      <motion.div
+                        key={file.name}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.2, delay: index * 0.05 }}
+                        className="relative group"
+                      >
+                        <img
+                          src={URL.createObjectURL(file)}
+                          className="w-full aspect-square rounded-lg object-cover"
+                          alt={file.name}
+                        />
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                          onClick={() => removeFile(file)}
+                          type="button"
+                        >
+                          <FaTrash className="w-4 h-4" />
+                        </Button>
+                      </motion.div>
+                    ))}
+                  </div>
+                  {files.length >= 10 && (
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm text-gray-500">
+                        {files.length} imágenes seleccionadas
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={clearAllFiles}
+                        type="button"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <FaTrash className="w-3 h-3 mr-2" />
+                        Eliminar todas
+                      </Button>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </motion.div>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="flex justify-end"
+          >
+            <Button 
+              type="submit" 
+              size="lg"
+              disabled={isLoading}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white min-w-[200px]"
+            >
+              {isLoading ? (
+                <>
+                  <div className="animate-spin mr-2">
+                    <FaImages className="w-4 h-4" />
+                  </div>
+                  Entrenando...
+                </>
+              ) : (
+                <>
+                  Entrenar Modelo
+                  {stripeIsConfigured && <span className="ml-2 text-white/80">(1 Crédito)</span>}
+                </>
+              )}
+            </Button>
+          </motion.div>
         </form>
       </Form>
     </div>
