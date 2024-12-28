@@ -102,7 +102,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const finalPrompt = `Professional photo of a ohwx ${model.gender} TOK in a black suit smiling`;
+  const finalPrompt = `Professional photo of a ohwx ${model.gender} TOK in a black suit smiling looking at the camera, neutral background`;
 
   const input = {
     prompt: finalPrompt,
@@ -125,8 +125,8 @@ export async function POST(request: Request) {
   }
 
   // Realizar 4 llamadas para obtener 16 imágenes
-  for (let i = 0; i < 1; i++) {
-    console.log(`Iniciando generación de batch ${i + 1}/1`);
+  for (let i = 0; i < 4; i++) {
+    console.log(`Iniciando generación de batch ${i + 1}/4`);
     
     // Iniciar predicción
     let prediction = await replicate.predictions.create({

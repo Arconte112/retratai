@@ -10,6 +10,8 @@ import {
 import Link from "next/link";
 import { FaArrowLeft } from "react-icons/fa";
 
+export const dynamic = "force-dynamic";
+
 const packsIsEnabled = process.env.NEXT_PUBLIC_TUNE_TYPE === "packs";
 
 export default async function Index({ params }: { params: { pack : string } }) {
