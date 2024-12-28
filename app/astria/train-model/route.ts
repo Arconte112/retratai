@@ -263,7 +263,7 @@ export async function POST(request: Request) {
     const replicateModelData = await createModelResponse.json();
 
     // Webhook de entrenamiento
-    const trainWebhook = `https://5a57-2001-1308-2907-2c00-a9fb-641c-9051-c42a.ngrok-free.app/astria/train-webhook?user_id=${user.id}&model_id=${modelId}&webhook_secret=${appWebhookSecret}`;
+    const trainWebhook = `https://bb6a-2001-1308-28e4-3400-75cd-fd8d-1220-7f7d.ngrok-free.app/astria/train-webhook?user_id=${user.id}&model_id=${modelId}&webhook_secret=${appWebhookSecret}`;
 
     // Iniciar el entrenamiento en Replicate
     await replicate.trainings.create(
@@ -273,7 +273,7 @@ export async function POST(request: Request) {
       {
         destination: `arconte112/${replicateModelName}`,
         input: {
-          steps: 5,
+          steps: 2000,
           lora_rank: 16,
           optimizer: "adamw8bit",
           batch_size: 1,
