@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 import { Suspense } from "react";
 import { Analytics } from "@vercel/analytics/react";
+import Link from "next/link";
 
 export const metadata = {
   title: "RetratAI",
@@ -27,6 +28,13 @@ export default function RootLayout({ children }: any) {
         <main className="flex flex-1 flex-col items-center py-16">
           {children}
         </main>
+        <footer className="w-full border-t py-4">
+          <div className="container mx-auto px-4 flex justify-center">
+            <Link href="/privacy-policy" className="text-sm text-gray-600 hover:text-gray-900">
+              Política de Privacidad
+            </Link>
+          </div>
+        </footer>
         <Toaster />
         <Analytics />
       </body>
