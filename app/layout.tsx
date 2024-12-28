@@ -9,6 +9,8 @@ export const metadata = {
   description: "Genera fotos profesionales en minutos usando IA",
 };
 
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({ children }: any) {
   return (
     <html lang="es">
