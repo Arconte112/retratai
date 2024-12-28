@@ -9,26 +9,10 @@ import {
 } from "@/components/ui/card";
 import Link from "next/link";
 import { FaArrowLeft } from "react-icons/fa";
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { Database } from "@/types/supabase";
-import Login from "@/app/login/page";
-
-export const dynamic = "force-dynamic";
 
 const packsIsEnabled = process.env.NEXT_PUBLIC_TUNE_TYPE === "packs";
 
 export default async function Index({ params }: { params: { pack : string } }) {
-  const supabase = createServerComponentClient<Database>({ cookies });
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return <Login />;
-  }
   
   return (
     <div className="w-full max-w-2xl mx-auto">
