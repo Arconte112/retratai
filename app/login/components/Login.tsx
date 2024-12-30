@@ -43,6 +43,13 @@ export const Login = ({
   };
 
   const redirectUrl = getRedirectUrl();
+  
+  console.log('Auth Redirect URL:', {
+    redirectUrl,
+    host,
+    protocol,
+    vercelUrl: process.env.NEXT_PUBLIC_VERCEL_URL
+  });
 
   const signInWithGoogle = async () => {
     setIsSubmitting(true);
