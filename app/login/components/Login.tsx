@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Database } from "@/types/supabase";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { AiOutlineGoogle } from "react-icons/ai";
 import { motion } from "framer-motion";
@@ -27,22 +27,6 @@ export const Login = ({
   const [isSignUp, setIsSignUp] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    // Check if we're returning from a Google auth redirect
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        window.location.href = '/overview';
-      }
-    };
-
-    // If we have a code in the URL, we're coming back from Google
-    const hasCode = window.location.href.includes('code=');
-    if (hasCode) {
-      checkUser();
-    }
-  }, []);
-
   const {
     register,
     handleSubmit,
@@ -59,13 +43,6 @@ export const Login = ({
   };
 
   const redirectUrl = getRedirectUrl();
-  
-  console.log('Auth Redirect URL:', {
-    redirectUrl,
-    host,
-    protocol,
-    vercelUrl: process.env.NEXT_PUBLIC_VERCEL_URL
-  });
 
   const signInWithGoogle = async () => {
     setIsSubmitting(true);
