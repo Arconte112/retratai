@@ -286,7 +286,7 @@ export async function POST(request: Request) {
     const replicateModelData = await createModelResponse.json();
 
     // Webhook de entrenamiento
-    const trainWebhook = `https://bb6a-2001-1308-28e4-3400-75cd-fd8d-1220-7f7d.ngrok-free.app/astria/train-webhook?user_id=${user.id}&model_id=${modelId}&webhook_secret=${appWebhookSecret}`;
+    const trainWebhook = `https://retratai.com/astria/train-webhook?user_id=${user.id}&model_id=${modelId}&webhook_secret=${appWebhookSecret}`;
 
     // Iniciar el entrenamiento en Replicate
     await replicate.trainings.create(
