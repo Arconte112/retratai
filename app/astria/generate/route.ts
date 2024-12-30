@@ -47,7 +47,6 @@ async function downloadAndUploadImage(imageUrl: string, userId: string, modelId:
 
     return publicUrl;
   } catch (error) {
-    console.error('Error processing image:', error);
     return null;
   }
 }
@@ -76,7 +75,6 @@ export async function POST(request: Request) {
     .single();
 
   if (modelError || !model) {
-    console.error("Error obteniendo modelo:", modelError);
     return NextResponse.json({ message: "Modelo no encontrado" }, { status: 404 });
   }
 
@@ -127,14 +125,11 @@ export async function POST(request: Request) {
   // Dividimos el "replicateModel" en owner/model:version
   const [ownerModel, version] = replicateModel.split(":");
   if (!version) {
-    console.error("La versión del modelo no se pudo extraer correctamente.");
     return NextResponse.json({ message: "Error en el ID del modelo." }, { status: 400 });
   }
 
   // Realizar 10 batches de generación (2 por cada prompt)
   for (let i = 0; i < 10; i++) {
-    console.log(`Iniciando generación de batch ${i + 1}/10`);
-    
     // Seleccionar el prompt basado en el batch actual (cambia cada 2 batches)
     const promptIndex = Math.floor(i / 2);
     const currentPrompt = prompts[promptIndex];
@@ -162,7 +157,6 @@ export async function POST(request: Request) {
     }
 
     if (prediction.status !== "succeeded") {
-      console.error(`La predicción del batch ${i + 1} falló:`, prediction.error);
       continue; // Continuar con el siguiente batch si este falla
     }
 
@@ -198,7 +192,6 @@ export async function POST(request: Request) {
     .insert(imagesToInsert);
 
   if (insertError) {
-    console.error("Error guardando imágenes en la BD:", insertError);
     return NextResponse.json(
       { message: "Error guardando imágenes en la BD." },
       { status: 500 }
@@ -226,14 +219,9 @@ export async function POST(request: Request) {
       
       await resend.emails.send(emailData);
     } catch (e: any) {
-      console.error("Error enviando email:", e);
+      // Error silently handled
     }
   }
-
-  // Actualizar has_generated a true usando el cliente de servicio
-  console.log("Intentando actualizar has_generated a true para el modelo:", modelId);
-  console.log("Usuario actual:", user.id);
-  console.log("Datos del modelo:", model);
 
   const { data: updateData, error: updateModelError } = await supabaseAdmin
     .from("models")
@@ -242,13 +230,11 @@ export async function POST(request: Request) {
     .select();
 
   if (updateModelError) {
-    console.error("Error actualizando has_generated:", updateModelError);
     return NextResponse.json(
       { message: "Error actualizando el estado del modelo." },
       { status: 500 }
     );
   }
-  console.log("Resultado de la actualización:", updateData);
 
   return NextResponse.json(
     { message: "Imágenes generadas y guardadas exitosamente.", images: allImages },

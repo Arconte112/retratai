@@ -32,15 +32,7 @@ const creditsPerPriceId: {
   [fiveCreditsPriceId]: 5,
 };
 
-console.log("Variables de entorno de precios:");
-console.log("STRIPE_PRICE_ID_ONE_CREDIT:", oneCreditPriceId);
-console.log("STRIPE_PRICE_ID_THREE_CREDITS:", threeCreditsPriceId);
-console.log("STRIPE_PRICE_ID_FIVE_CREDITS:", fiveCreditsPriceId);
-console.log("Mapeo de créditos por precio:", creditsPerPriceId);
-
 export async function POST(request: Request) {
-  console.log("Request from: ", request.url);
-  console.log("Request: ", request);
   const headersObj = headers();
   const sig = headersObj.get("stripe-signature");
 
@@ -84,7 +76,6 @@ export async function POST(request: Request) {
     event = stripe.webhooks.constructEvent(rawBody, sig, endpointSecret!);
   } catch (err) {
     const error = err as Error;
-    console.log("Error verifying webhook signature: " + error.message);
     return NextResponse.json(
       {
         message: `Webhook Error: ${error?.message}`,
@@ -129,13 +120,6 @@ export async function POST(request: Request) {
       const creditsPerUnit = creditsPerPriceId[priceId];
       const totalCreditsPurchased = quantity! * creditsPerUnit;
 
-      console.log({ lineItems });
-      console.log({ quantity });
-      console.log({ priceId });
-      console.log({ creditsPerUnit });
-
-      console.log("totalCreditsPurchased: " + totalCreditsPurchased);
-
       const { data: existingCredits } = await supabase
         .from("credits")
         .select("*")
@@ -153,7 +137,6 @@ export async function POST(request: Request) {
           .eq("user_id", userId);
 
         if (error) {
-          console.log(error);
           return NextResponse.json(
             {
               message: `Error updating credits: ${JSON.stringify(error)}. data=${data}`,
@@ -178,7 +161,6 @@ export async function POST(request: Request) {
         });
 
         if (error) {
-          console.log(error);
           return NextResponse.json(
             {
               message: `Error creating credits: ${JSON.stringify(error)}`,

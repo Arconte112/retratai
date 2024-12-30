@@ -14,11 +14,7 @@ export async function GET(req: NextRequest) {
   const error_description = requestUrl.searchParams.get("error_description");
 
   if (error) {
-    console.log("error: ", {
-      error,
-      error_description,
-      code,
-    });
+    // ... existing code ...
   }
 
   if (code) {

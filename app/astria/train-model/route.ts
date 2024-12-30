@@ -40,7 +40,6 @@ if (!process.env.GEMINI_API_KEY) {
   throw new Error("MISSING GEMINI_API_KEY!");
 }
 
-// Función para descargar imagen desde URL
 async function downloadImage(url: string): Promise<Buffer> {
   const res = await fetch(url);
   if (!res.ok) {
@@ -50,24 +49,20 @@ async function downloadImage(url: string): Promise<Buffer> {
   return Buffer.from(arrayBuffer);
 }
 
-// Función para detectar el MIME type de una imagen
 async function detectMimeType(buffer: Buffer): Promise<string> {
   try {
     const fileType = await fileTypeFromBuffer(buffer);
     return fileType?.mime || 'application/octet-stream';
   } catch (error) {
-    console.error('Error detecting MIME type:', error);
     return 'application/octet-stream';
   }
 }
 
-// Función de espera
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Función para generar caption con Gemini con reintentos
 async function generateImageCaption(imageBuffer: Buffer): Promise<string> {
   const maxRetries = 3;
-  const baseDelay = 1000; // 1 segundo
+  const baseDelay = 1000;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
@@ -94,22 +89,13 @@ async function generateImageCaption(imageBuffer: Buffer): Promise<string> {
       const response = await result.response;
       return response.text();
     } catch (error: any) {
-      console.error(`Error en intento ${attempt + 1}:`, error);
-      
-      // Si es el último intento, lanzar el error
       if (attempt === maxRetries - 1) {
-        console.error('Se agotaron los reintentos para generar el caption');
         return '';
       }
 
-      // Si es error 429, esperar con backoff exponencial
       if (error?.status === 429) {
         const delay = baseDelay * Math.pow(2, attempt);
-        console.log(`Esperando ${delay}ms antes del siguiente intento...`);
         await wait(delay);
-      } else {
-        // Si es otro tipo de error, no reintentar
-        return '';
       }
     }
   }
@@ -179,7 +165,6 @@ export async function POST(request: Request) {
     }
   }
 
-  // Crear el modelo en DB con estado "processing"
   const { error: modelError, data: insertedModel } = await supabaseRoute
     .from("models")
     .insert({
@@ -201,7 +186,6 @@ export async function POST(request: Request) {
 
   const modelId = insertedModel.id;
 
-  // Descargar las imágenes y crear ZIP
   const zip = new AdmZip();
   try {
     for (let i = 0; i < images.length; i++) {
@@ -209,7 +193,6 @@ export async function POST(request: Request) {
       const imgBuffer = await downloadImage(imageUrl);
       zip.addFile(`image_${i}.jpg`, imgBuffer);
       
-      // Generar caption con Gemini
       const caption = await generateImageCaption(imgBuffer);
       zip.addFile(`image_${i}.txt`, Buffer.from(caption));
     }
@@ -219,7 +202,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Error procesando imágenes." }, { status: 500 });
   }
 
-  // Subir ZIP a Supabase Storage
   const supabaseAdmin = createClient<Database>(supabaseUrl!, supabaseServiceRoleKey!, {
     auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
   });
@@ -244,14 +226,12 @@ export async function POST(request: Request) {
     data: { publicUrl },
   } = supabaseAdmin.storage.from("zip").getPublicUrl(zipFileName);
 
-  // Guardar samples
   const samples = images.map((uri) => ({ modelId, uri }));
   const { error: samplesError } = await supabaseRoute.from("samples").insert(samples);
   if (samplesError) {
     console.error("samplesError: ", samplesError);
   }
 
-  // Crear el modelo en Replicate (privado, gpu-t4)
   const modelNameSuffix = randomUUID();
   const replicateModelName = `${name.replace(/\s+/g, '-').toLowerCase()}-${modelNameSuffix}`;
   
@@ -285,10 +265,8 @@ export async function POST(request: Request) {
 
     const replicateModelData = await createModelResponse.json();
 
-    // Webhook de entrenamiento
     const trainWebhook = `https://retratai.com/astria/train-webhook?user_id=${user.id}&model_id=${modelId}&webhook_secret=${appWebhookSecret}`;
 
-    // Iniciar el entrenamiento en Replicate
     await replicate.trainings.create(
       "ostris",
       "flux-dev-lora-trainer",
@@ -296,7 +274,7 @@ export async function POST(request: Request) {
       {
         destination: `arconte112/${replicateModelName}`,
         input: {
-          steps: 5,
+          steps: 2000,
           lora_rank: 16,
           optimizer: "adamw8bit",
           batch_size: 1,
@@ -310,7 +288,6 @@ export async function POST(request: Request) {
       }
     );
 
-    // Restar créditos si aplica
     if (stripeIsConfigured) {
       const { data: currentCredits, error: currentCreditsError } = await supabaseRoute
         .from("credits")
@@ -345,7 +322,6 @@ export async function POST(request: Request) {
 
   } catch (e: any) {
     console.error("Error iniciando el entrenamiento en Replicate: ", e);
-    // rollback del modelo
     await supabaseRoute.from("models").delete().eq("id", modelId);
     return NextResponse.json(
       { message: "Error iniciando el entrenamiento." },
