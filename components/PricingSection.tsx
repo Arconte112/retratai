@@ -92,10 +92,10 @@ const pricingOptions = [
     price: "$12",
     description: "Perfecto para probar el servicio",
     features: [
-      "16 Fotos de Perfil",
-      "1 Modelo Incluido",
-      "Alta Resolución",
-      "Uso Comercial"
+      "40 Fotos de Alta Calidad",
+      "1 Modelo Personalizado",
+      "Uso Comercial Incluido",
+      "Entrega Inmediata"
     ],
     buttonText: "Comenzar Ahora",
     bgColor: "bg-white",
@@ -104,13 +104,13 @@ const pricingOptions = [
   {
     title: "3 Créditos",
     price: "$30",
-    description: "Ideal para profesionales",
+    description: "¡Ahorra $6 USD!",
     features: [
-      "48 Fotos de Perfil",
-      "3 Modelos Incluidos",
-      "Alta Resolución",
-      "Uso Comercial",
-      "Ahorro del 17%"
+      "120 Fotos de Alta Calidad",
+      "3 Modelos Personalizados",
+      "Ideal para Cambiar tu Estilo Mensualmente",
+      "Perfecto para Productos de tu Marca",
+      "Solo $10 USD por Crédito"
     ],
     buttonText: "Elegir Plan",
     bgColor: "bg-white",
@@ -118,14 +118,14 @@ const pricingOptions = [
   },
   {
     title: "5 Créditos",
-    price: "$40",
-    description: "Para equipos y empresas",
+    price: "$45",
+    description: "¡Máximo Ahorro: $15 USD!",
     features: [
-      "80 Fotos de Perfil",
-      "5 Modelos Incluidos",
-      "Alta Resolución",
-      "Uso Comercial",
-      "Ahorro del 33%"
+      "200 Fotos de Alta Calidad",
+      "5 Modelos Personalizados",
+      "Ideal para Campañas Completas",
+      "Perfecto para Equipos e Influencers",
+      "Solo $9 USD por Crédito"
     ],
     buttonText: "Elegir Plan",
     bgColor: "bg-white",

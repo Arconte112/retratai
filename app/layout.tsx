@@ -4,10 +4,47 @@ import "./globals.css";
 import { Suspense } from "react";
 import { Analytics } from "@vercel/analytics/react";
 import Link from "next/link";
+import JsonLd from "@/components/JsonLd";
 
 export const metadata = {
-  title: "RetratAI",
-  description: "Genera fotos profesionales en minutos usando IA",
+  title: "RetratAI - Fotos Profesionales con Inteligencia Artificial",
+  description: "Genera fotos profesionales de alta calidad en minutos usando inteligencia artificial. Ideal para LinkedIn, redes sociales y perfiles profesionales.",
+  keywords: "fotos profesionales, inteligencia artificial, headshots, fotos corporativas, linkedin, redes sociales, fotografía profesional, IA",
+  authors: [{ name: "RetratAI" }],
+  creator: "RetratAI",
+  publisher: "RetratAI",
+  formatDetection: {
+    email: false,
+    telephone: false,
+  },
+  metadataBase: new URL('https://retratai.com'),
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'RetratAI - Fotos Profesionales con IA',
+    description: 'Genera fotos profesionales de alta calidad en minutos usando inteligencia artificial.',
+    url: 'https://retratai.com',
+    siteName: 'RetratAI',
+    locale: 'es_ES',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'RetratAI - Fotos Profesionales con IA',
+    description: 'Genera fotos profesionales de alta calidad en minutos usando inteligencia artificial.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 export const dynamic = "force-dynamic";
@@ -15,6 +52,11 @@ export const dynamic = "force-dynamic";
 export default function RootLayout({ children }: any) {
   return (
     <html lang="es">
+      <head>
+        <JsonLd />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/favicon.ico" />
+      </head>
       <body className="min-h-screen flex flex-col">
         <section>
           <Suspense

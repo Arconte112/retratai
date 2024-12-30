@@ -22,12 +22,26 @@ export default async function Index() {
   }
 
   return (
-    <div className="flex flex-col items-center">
-      <HeroSection />
-      <ExplainerSection />
-      <PriceComparisonSection />
-      <PricingSection />
-      <FAQSection />
-    </div>
+    <article className="flex flex-col items-center w-full">
+      <section aria-label="Inicio" className="w-full">
+        <HeroSection />
+      </section>
+      
+      <section aria-label="¿Cómo funciona?" className="w-full">
+        <ExplainerSection />
+      </section>
+      
+      <section aria-label="Comparación de precios" className="w-full">
+        <PriceComparisonSection />
+      </section>
+      
+      <section aria-label="Planes y precios" className="w-full">
+        <PricingSection />
+      </section>
+      
+      <section aria-label="Preguntas frecuentes" className="w-full">
+        <FAQSection />
+      </section>
+    </article>
   );
 }

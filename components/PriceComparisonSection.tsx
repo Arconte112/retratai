@@ -100,7 +100,7 @@ const PriceComparisonSection = () => {
         />
         <ComparisonCard
           type="ai"
-          price="$20 - $50"
+          price="$12 - $45"
           priceLabel="por paquete"
           features={aiFeatures}
           direction="right"
