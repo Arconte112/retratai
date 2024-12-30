@@ -208,12 +208,47 @@ export async function POST(request: Request) {
       const emailData = {
         from: "info@retratai.com",
         to: user.email ?? "",
-        subject: "¡Tus headshots están listos!",
+        subject: "¡Tus headshots profesionales están listos! 📸",
         html: `
-          <h1>¡Tus headshots están listos!</h1>
-          <p>Hemos terminado de generar tus headshots profesionales.</p>
-          <p>Puedes verlos iniciando sesión en nuestra plataforma.</p>
-          <p>¡Gracias por usar nuestro servicio!</p>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #1a365d; margin-bottom: 20px;">¡Tus headshots están listos! 🎉</h1>
+            
+            <p style="color: #2d3748; font-size: 16px; line-height: 1.6;">
+              ¡Genial! Hemos terminado de generar tus headshots profesionales personalizados. 
+              Hemos creado una variedad de estilos y poses diferentes para que puedas elegir los que mejor 
+              representen tu imagen profesional.
+            </p>
+
+            <div style="background-color: #f7fafc; border-left: 4px solid #4299e1; padding: 15px; margin: 20px 0;">
+              <p style="color: #2d3748; font-size: 16px; margin: 0;">
+                <strong>Detalles de tu generación:</strong><br>
+                • Múltiples estilos profesionales<br>
+                • Diferentes poses y ángulos<br>
+                • Fondos y ambientes variados<br>
+                • Alta calidad optimizada para redes profesionales
+              </p>
+            </div>
+
+            <p style="color: #2d3748; font-size: 16px; line-height: 1.6;">
+              Para ver y descargar tus headshots:
+            </p>
+
+            <div style="margin: 30px 0; text-align: center;">
+              <a href="https://retratai.com/overview" 
+                 style="background: linear-gradient(to right, #2563eb, #7c3aed); 
+                        color: white; 
+                        padding: 12px 24px; 
+                        text-decoration: none; 
+                        border-radius: 6px; 
+                        font-weight: bold;">
+                Ver Mis Headshots
+              </a>
+            </div>
+
+            <p style="color: #64748b; font-size: 14px; margin-top: 30px;">
+              ¿Necesitas ayuda? Responde a este correo y estaremos encantados de asistirte.
+            </p>
+          </div>
         `,
       };
       
