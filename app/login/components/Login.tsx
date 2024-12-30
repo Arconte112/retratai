@@ -28,10 +28,18 @@ export const Login = ({
   const { toast } = useToast();
 
   useEffect(() => {
-    const shouldReload = localStorage.getItem('shouldReloadAfterAuth');
-    if (shouldReload) {
-      localStorage.removeItem('shouldReloadAfterAuth');
-      window.location.href = '/overview';
+    // Check if we're returning from a Google auth redirect
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        window.location.href = '/overview';
+      }
+    };
+
+    // If we have a code in the URL, we're coming back from Google
+    const hasCode = window.location.href.includes('code=');
+    if (hasCode) {
+      checkUser();
     }
   }, []);
 
@@ -62,8 +70,6 @@ export const Login = ({
   const signInWithGoogle = async () => {
     setIsSubmitting(true);
     try {
-      localStorage.setItem('shouldReloadAfterAuth', 'true');
-
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
