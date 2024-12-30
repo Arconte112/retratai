@@ -54,6 +54,14 @@ export const Login = ({
   const signInWithGoogle = async () => {
     setIsSubmitting(true);
     try {
+      console.log('Auth Redirect URL:', {
+        redirectUrl,
+        host,
+        protocol,
+        vercelUrl: process.env.NEXT_PUBLIC_VERCEL_URL,
+        currentUrl: window.location.href
+      });
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
