@@ -102,10 +102,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const finalPrompt = `Professional photo of a ohwx ${model.gender} TOK in a black suit smiling looking at the camera, neutral background`;
+  // Array de prompts para diferentes estilos de fotos profesionales
+  const prompts = [
+    `Professional headshot of a ohwx ${model.gender} TOK in refined business suit, relaxed yet authoritative stance, contemporary office interior with soft bokeh, executive atmosphere, optimal LinkedIn profile, cinematic lighting`,
+    `High-end corporate portrait of a ohwx ${model.gender} TOK wearing sophisticated tailored blazer, authentic expression, minimalist office backdrop, urban professional setting, personal branding focus, dramatic studio illumination`,
+    `Premium business portrait of a ohwx ${model.gender} TOK in modern business wear, engaging pose, sleek glass office background, tech startup environment, ideal for digital presence, refined lighting setup`,
+    `Executive photograph of a ohwx ${model.gender} TOK in premium suit and tie, natural leadership pose, elegant office setting with depth, upscale corporate ambiance, perfect for business profiles, controlled studio lights`,
+    `Modern business portrait of a ohwx ${model.gender} TOK in high-end attire, genuine confident expression, architectural office elements blurred, contemporary workplace setting, professional marketing use, balanced lighting`
+  ];
 
-  const input = {
-    prompt: finalPrompt,
+  // Configuración base para la generación
+  const baseInput = {
     lora_scale: 1,
     num_outputs: 4,
     output_format: "jpg",
@@ -124,9 +131,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Error en el ID del modelo." }, { status: 400 });
   }
 
-  // Realizar 4 llamadas para obtener 16 imágenes
-  for (let i = 0; i < 4; i++) {
-    console.log(`Iniciando generación de batch ${i + 1}/4`);
+  // Realizar 10 batches de generación (2 por cada prompt)
+  for (let i = 0; i < 10; i++) {
+    console.log(`Iniciando generación de batch ${i + 1}/10`);
+    
+    // Seleccionar el prompt basado en el batch actual (cambia cada 2 batches)
+    const promptIndex = Math.floor(i / 2);
+    const currentPrompt = prompts[promptIndex];
+    
+    // Combinar la configuración base con el prompt actual
+    const input = {
+      ...baseInput,
+      prompt: currentPrompt,
+    };
     
     // Iniciar predicción
     let prediction = await replicate.predictions.create({
@@ -167,8 +184,8 @@ export async function POST(request: Request) {
       const publicUrl = await downloadAndUploadImage(uri, user.id, model.id.toString());
       return {
         modelId: model.id,
-        uri: publicUrl || uri, // Usar el URL original como fallback
-        original_uri: uri // Guardar el URL original de Replicate
+        uri: publicUrl || uri,
+        original_uri: uri
       };
     })
   );
@@ -186,6 +203,31 @@ export async function POST(request: Request) {
       { message: "Error guardando imágenes en la BD." },
       { status: 500 }
     );
+  }
+
+  // Enviar correo de notificación
+  const resendApiKey = process.env.RESEND_API_KEY;
+  if (resendApiKey) {
+    try {
+      const { Resend } = await import("resend");
+      const resend = new Resend(resendApiKey);
+      
+      const emailData = {
+        from: "info@retratai.com",
+        to: user.email ?? "",
+        subject: "¡Tus headshots están listos!",
+        html: `
+          <h1>¡Tus headshots están listos!</h1>
+          <p>Hemos terminado de generar tus headshots profesionales.</p>
+          <p>Puedes verlos iniciando sesión en nuestra plataforma.</p>
+          <p>¡Gracias por usar nuestro servicio!</p>
+        `,
+      };
+      
+      await resend.emails.send(emailData);
+    } catch (e: any) {
+      console.error("Error enviando email:", e);
+    }
   }
 
   // Actualizar has_generated a true usando el cliente de servicio

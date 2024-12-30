@@ -168,6 +168,12 @@ export default function ClientSideModel({
                     )}
                   </Button>
                 </div>
+                {isGenerating && (
+                  <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                    <p className="text-blue-800 font-medium">Este proceso tomará aproximadamente 10 minutos.</p>
+                    <p className="text-blue-600 mt-1">Tómate un café mientras tanto, te notificaremos por correo cuando estén listas.</p>
+                  </div>
+                )}
               </div>
             )}
             {model.status === "finished" && model.has_generated && (

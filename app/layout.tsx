@@ -29,10 +29,19 @@ export default function RootLayout({ children }: any) {
           {children}
         </main>
         <footer className="w-full border-t py-4">
-          <div className="container mx-auto px-4 flex justify-center">
-            <Link href="/privacy-policy" className="text-sm text-gray-600 hover:text-gray-900">
-              Política de Privacidad
-            </Link>
+          <div className="container mx-auto px-4 flex flex-col items-center gap-2">
+            <div className="flex items-center gap-4">
+              <Link href="/privacy-policy" className="text-sm text-gray-600 hover:text-gray-900">
+                Política de Privacidad
+              </Link>
+              <span className="text-gray-300">|</span>
+              <a href="mailto:info@retratai.com" className="text-sm text-gray-600 hover:text-gray-900">
+                Soporte
+              </a>
+            </div>
+            <div className="text-sm text-gray-500">
+              Contacto: <a href="mailto:info@retratai.com" className="text-gray-600 hover:text-gray-900">info@retratai.com</a>
+            </div>
           </div>
         </footer>
         <Toaster />

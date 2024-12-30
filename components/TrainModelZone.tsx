@@ -279,31 +279,65 @@ export default function TrainModelZone({ packSlug }: { packSlug: string }) {
                 control={form.control}
                 name="gender"
                 render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormLabel className="text-base font-semibold">Género</FormLabel>
-                    <FormDescription>
-                      Selecciona el género para optimizar la generación
+                  <FormItem className="space-y-4">
+                    <FormLabel className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                      Género
+                    </FormLabel>
+                    <FormDescription className="text-base text-gray-600">
+                      Selecciona el género para optimizar la generación de fotos
                     </FormDescription>
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
                         defaultValue={field.value}
-                        className="flex flex-col space-y-3"
+                        className="grid grid-cols-1 md:grid-cols-2 gap-4"
                       >
-                        <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormItem className="relative">
                           <FormControl>
-                            <RadioGroupItem value="man" />
+                            <RadioGroupItem
+                              value="man"
+                              className="peer sr-only"
+                            />
                           </FormControl>
-                          <FormLabel className="font-normal text-base">
-                            Hombre
+                          <FormLabel className="flex flex-col items-center gap-4 p-6 border-2 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 peer-data-[state=checked]:border-blue-600 peer-data-[state=checked]:bg-blue-50 transition-all">
+                            <div className="p-3 bg-blue-100 rounded-xl">
+                              <svg 
+                                className="w-8 h-8 text-blue-600" 
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-lg font-medium text-gray-900">Hombre</p>
+                              <p className="text-sm text-gray-500">Optimizado para fotos masculinas</p>
+                            </div>
                           </FormLabel>
                         </FormItem>
-                        <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormItem className="relative">
                           <FormControl>
-                            <RadioGroupItem value="woman" />
+                            <RadioGroupItem
+                              value="woman"
+                              className="peer sr-only"
+                            />
                           </FormControl>
-                          <FormLabel className="font-normal text-base">
-                            Mujer
+                          <FormLabel className="flex flex-col items-center gap-4 p-6 border-2 rounded-xl cursor-pointer hover:border-purple-400 hover:bg-purple-50/50 peer-data-[state=checked]:border-purple-600 peer-data-[state=checked]:bg-purple-50 transition-all">
+                            <div className="p-3 bg-purple-100 rounded-xl">
+                              <svg 
+                                className="w-8 h-8 text-purple-600" 
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-lg font-medium text-gray-900">Mujer</p>
+                              <p className="text-sm text-gray-500">Optimizado para fotos femeninas</p>
+                            </div>
                           </FormLabel>
                         </FormItem>
                       </RadioGroup>

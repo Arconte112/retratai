@@ -61,37 +61,60 @@ async function detectMimeType(buffer: Buffer): Promise<string> {
   }
 }
 
-// Función para generar caption con Gemini
+// Función de espera
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Función para generar caption con Gemini con reintentos
 async function generateImageCaption(imageBuffer: Buffer): Promise<string> {
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash-exp",
-  });
+  const maxRetries = 3;
+  const baseDelay = 1000; // 1 segundo
 
-  try {
-    const mimeType = await detectMimeType(imageBuffer);
-    
-    // Create the prompt parts array with image and text
-    const prompt = [{
-      inlineData: {
-        mimeType: mimeType,
-        data: imageBuffer.toString('base64')
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.0-flash-exp",
+      });
+
+      const mimeType = await detectMimeType(imageBuffer);
+      
+      const prompt = [{
+        inlineData: {
+          mimeType: mimeType,
+          data: imageBuffer.toString('base64')
+        }
+      }, `You are an expert system in creating detailed descriptions of headshots.
+      If the person in the image is a man, start the caption with "a photo of a ohwx man TOK".
+      If the person in the image is a woman, start the caption with "a photo of a ohwx woman TOK".
+      Focus on clothing, landscape, lighting etc.
+      You may describe facial expressions (smiling, angry, etc).
+      Do not describe facial features, body details or other identifying characteristics.
+      Provide only the caption.`];
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return response.text();
+    } catch (error: any) {
+      console.error(`Error en intento ${attempt + 1}:`, error);
+      
+      // Si es el último intento, lanzar el error
+      if (attempt === maxRetries - 1) {
+        console.error('Se agotaron los reintentos para generar el caption');
+        return '';
       }
-    }, `You are an expert system in creating detailed descriptions of headshots.
-    If the person in the image is a man, start the caption with "a photo of a ohwx man TOK".
-    If the person in the image is a woman, start the caption with "a photo of a ohwx woman TOK".
-    Focus on clothing, landscape, lighting etc.
-    You may describe facial expressions (smiling, angry, etc).
-    Do not describe facial features, body details or other identifying characteristics.
-    Provide only the caption.`];
 
-    // Generate content with the new prompt format
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
-  } catch (error) {
-    console.error('Error generating caption:', error);
-    return '';
+      // Si es error 429, esperar con backoff exponencial
+      if (error?.status === 429) {
+        const delay = baseDelay * Math.pow(2, attempt);
+        console.log(`Esperando ${delay}ms antes del siguiente intento...`);
+        await wait(delay);
+      } else {
+        // Si es otro tipo de error, no reintentar
+        return '';
+      }
+    }
   }
+
+  return '';
 }
 
 type TrainModelPayload = {
@@ -273,7 +296,7 @@ export async function POST(request: Request) {
       {
         destination: `arconte112/${replicateModelName}`,
         input: {
-          steps: 2000,
+          steps: 5,
           lora_rank: 16,
           optimizer: "adamw8bit",
           batch_size: 1,
