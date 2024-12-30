@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
   const requestUrl = new URL(req.url);
   const code = requestUrl.searchParams.get("code");
   const error = requestUrl.searchParams.get("error");
+  const next = requestUrl.searchParams.get("next") || "/";
   const error_description = requestUrl.searchParams.get("error_description");
 
   if (error) {
@@ -25,6 +26,9 @@ export async function GET(req: NextRequest) {
 
     try {
       await supabase.auth.exchangeCodeForSession(code);
+
+      // ater exchanging the code, we should check if the user has a feature-flag row and a credits now, if not, we should create one
+
       const { data: user, error: userError } = await supabase.auth.getUser();
 
       if (userError || !user) {
@@ -36,10 +40,6 @@ export async function GET(req: NextRequest) {
           `${requestUrl.origin}/login/failed?err=500`
         );
       }
-
-      // Redirigir siempre a overview después de un login exitoso
-      return NextResponse.redirect(new URL('/overview', requestUrl.origin));
-      
     } catch (error) {
       if (isAuthApiError(error)) {
         console.error(
@@ -58,6 +58,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Si no hay código, redirigir a la página de login
-  return NextResponse.redirect(new URL('/login', requestUrl.origin));
+  return NextResponse.redirect(new URL(next, req.url));
 }
