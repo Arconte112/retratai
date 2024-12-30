@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Database } from "@/types/supabase";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { AiOutlineGoogle } from "react-icons/ai";
 import { motion } from "framer-motion";
@@ -26,6 +26,14 @@ export const Login = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const shouldReload = localStorage.getItem('shouldReloadAfterAuth');
+    if (shouldReload) {
+      localStorage.removeItem('shouldReloadAfterAuth');
+      window.location.href = '/overview';
+    }
+  }, []);
 
   const {
     register,
@@ -54,13 +62,7 @@ export const Login = ({
   const signInWithGoogle = async () => {
     setIsSubmitting(true);
     try {
-      console.log('Auth Redirect URL:', {
-        redirectUrl,
-        host,
-        protocol,
-        vercelUrl: process.env.NEXT_PUBLIC_VERCEL_URL,
-        currentUrl: window.location.href
-      });
+      localStorage.setItem('shouldReloadAfterAuth', 'true');
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
