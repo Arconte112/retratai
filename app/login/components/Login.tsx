@@ -36,8 +36,8 @@ export const Login = ({
   const protocol = host?.includes("localhost") ? "http" : "https";
 
   const getRedirectUrl = () => {
-    if (process.env.NEXT_PUBLIC_VERCEL_URL) {
-      return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}/auth/callback`;
+    if (process.env.NEXT_PUBLIC_APP_URL) {
+      return `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
     }
     return `${protocol}://${host}/auth/callback`;
   };
