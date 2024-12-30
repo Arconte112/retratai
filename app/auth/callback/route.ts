@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   const requestUrl = new URL(req.url);
   const code = requestUrl.searchParams.get("code");
   const error = requestUrl.searchParams.get("error");
-  const next = requestUrl.searchParams.get("next") || "/overview";
+  const next = requestUrl.searchParams.get("next") || "/";
   const error_description = requestUrl.searchParams.get("error_description");
 
   if (error) {
