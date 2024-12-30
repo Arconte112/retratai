@@ -51,6 +51,9 @@ export const Login = ({
         provider: "google",
         options: {
           redirectTo: redirectUrl,
+          queryParams: {
+            next: '/overview'
+          }
         },
       });
 
