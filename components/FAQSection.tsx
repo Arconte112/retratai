@@ -35,7 +35,7 @@ export default function FAQSection() {
         },
         {
           question: "¿Cuántas fotos puedo generar?",
-          answer: "El número de fotos que puedes generar dependerá del plan que elijas. Cada sesión te permite generar múltiples variaciones para encontrar la imagen perfecta."
+          answer: "Cada crédito te permite generar 40 fotos de alta calidad con un modelo personalizado. Por ejemplo, el plan de 3 créditos te permite generar 120 fotos con 3 modelos diferentes."
         }
       ]
     },
@@ -61,32 +61,32 @@ export default function FAQSection() {
       items: [
         {
           question: "¿Qué sucede con mis fotos originales?",
-          answer: "Tus fotos originales se utilizan únicamente para generar los headshots y se manejan con estricta confidencialidad. No se comparten con terceros."
+          answer: "Tus fotos originales se utilizan únicamente para generar los headshots y se eliminan automáticamente después del proceso. Manejamos tus datos con estricta confidencialidad y no se comparten con terceros."
         },
         {
           question: "¿Son seguras mis imágenes?",
-          answer: "Sí, utilizamos encriptación de extremo a extremo y seguimos las mejores prácticas de seguridad para proteger tus datos e imágenes."
+          answer: "Sí, utilizamos encriptación de extremo a extremo y seguimos las mejores prácticas de seguridad para proteger tus datos e imágenes. Implementamos medidas de seguridad técnicas y organizativas avanzadas."
         },
         {
           question: "¿Puedo eliminar mis datos?",
-          answer: "Sí, puedes solicitar la eliminación de tus datos y fotos en cualquier momento."
+          answer: "Sí, puedes solicitar la eliminación de tus datos y fotos en cualquier momento. Tus fotos originales se eliminan automáticamente después del proceso de generación."
         }
       ]
     },
     {
-      category: "Soporte",
+      category: "Soporte y Políticas",
       items: [
         {
           question: "¿Qué hago si tengo problemas técnicos?",
-          answer: "Si encuentras algún problema técnico, puedes contactar a nuestro equipo de soporte a través del formulario de contacto."
+          answer: "Si encuentras algún problema técnico, puedes contactar a nuestro equipo de soporte a través del formulario de contacto o enviando un email a info@retratai.com."
         },
         {
           question: "¿Hay reembolsos disponibles?",
-          answer: "Nuestra política de reembolso depende del tipo de servicio contratado. Contacta con soporte para más información."
+          answer: "Los reembolsos solo están disponibles después de una investigación por parte de nuestro equipo que confirme que la calidad de las fotos generadas no cumple con nuestros estándares de calidad. Para solicitar una revisión, contacta a nuestro equipo de soporte."
         },
         {
-          question: "¿Cómo puedo obtener ayuda adicional?",
-          answer: "Para cualquier pregunta adicional, puedes contactarnos a través de nuestro formulario de contacto o enviar un email a support@example.com."
+          question: "¿Cuánto tiempo toma el proceso?",
+          answer: "El proceso se divide en dos partes: primero, el entrenamiento del modelo que toma aproximadamente 40 minutos. Una vez listo el modelo, deberás iniciar el proceso de generación de fotos que toma entre 5-10 minutos adicionales. Recibirás notificaciones por email cuando tu modelo esté listo y cuando tus fotos hayan sido generadas."
         }
       ]
     }
