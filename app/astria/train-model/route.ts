@@ -83,6 +83,7 @@ async function generateImageCaption(imageBuffer: Buffer): Promise<string> {
       Focus on clothing, landscape, lighting etc.
       You may describe facial expressions (smiling, angry, etc).
       Do not describe facial features, body details or other identifying characteristics.
+      You will always refer to the person as TOK
       Provide only the caption.`];
 
       const result = await model.generateContent(prompt);
