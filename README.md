@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RetratAI
 
-## Getting Started
+RetratAI es una landing page enfocada en vender un servicio de retratos generados con inteligencia artificial. El objetivo del proyecto es entregar una experiencia de marketing moderna, con diseño responsivo, CTA claros y secciones que muestran beneficios, ejemplos y planes de precios.
 
-First, run the development server:
+https://github.com/user-attachments/assets/30543bcf-5115-4e3f-a293-55ac673bee35
 
+## ✨ Características
+- **Hero persuasivo** con headline y CTA principal.
+- **Catálogo de beneficios** en tarjetas animadas.
+- **Galería de ejemplos** responsive usando `next/image`.
+- **Tabla de precios** con plan destacado y comparativa.
+- **Llamado a la acción final** para convertir visitantes.
+- Paleta de colores y tipografía consistentes con una marca de IA creativa.
+
+## 🛠 Stack
+- [Next.js 15 (App Router)](https://nextjs.org/)
+- [React 19](https://react.dev/)
+- [Tailwind CSS 3](https://tailwindcss.com/)
+
+## 🚀 Puesta en marcha
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Scripts disponibles
+| Script | Descripción |
+|--------|-------------|
+| `npm run dev` | Arranca el servidor de desarrollo (Turbopack). |
+| `npm run build` | Genera el build de producción. |
+| `npm run start` | Sirve la aplicación ya compilada. |
+| `npm run lint` | Ejecuta ESLint con la configuración de Next.js. |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📁 Estructura
+```
+src/
+ └── app/
+     ├── layout.tsx   # Layout raíz
+     └── page.tsx     # Landing page completa
+public/
+ └── images/         # Assets y favicon
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🧭 Personalización
+- Sustituye los textos del Hero, beneficios y precios en `src/app/page.tsx`.
+- Reemplaza las imágenes `placehold.co` por previews generadas con tu propio modelo.
+- Actualiza los metadatos en `src/app/layout.tsx` para SEO/OG.
+- Ajusta colores y fuentes en `tailwind.config.ts` si deseas un branding diferente.
 
-## Learn More
+## 🗺 Roadmap sugerido
+- Integrar formulario/captura de lead (Beehiiv, Mailchimp o API propia).
+- Componentizar secciones para reutilizarlas en variantes de campaña.
+- Añadir animaciones con Framer Motion.
+- Incluir testimonios o casos de uso.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📄 Licencia
+MIT © Rainier Alejandro
