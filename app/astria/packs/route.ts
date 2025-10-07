@@ -8,13 +8,13 @@ import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 export const dynamic = "force-dynamic";
 
 // Environment Variables
-const API_KEY = process.env.ASTRIA_API_KEY;
+const API_KEY = process.env.RETRATAI_PACKS_API_KEY;
 const QUERY_TYPE = process.env.PACK_QUERY_TYPE || "users"; // Default to 'users'
-const DOMAIN = "https://api.astria.ai";
+const DOMAIN = process.env.RETRATAI_PACKS_API_URL || "https://api.astria.ai";
 
 // Check if API Key is missing
 if (!API_KEY) {
-  throw new Error("MISSING API_KEY!");
+  throw new Error("Missing RETRATAI_PACKS_API_KEY environment variable");
 }
 
 export async function GET(request: Request) {
