@@ -1,58 +1,36 @@
 # RetratAI
 
-RetratAI es una landing page enfocada en vender un servicio de retratos generados con inteligencia artificial. El objetivo del proyecto es entregar una experiencia de marketing moderna, con diseño responsivo, CTA claros y secciones que muestran beneficios, ejemplos y planes de precios.
+RetratAI is a Next.js landing experience for an AI portrait product. It presents the offer, benefits, generated-photo examples, pricing tiers and conversion calls to action in a responsive marketing page.
 
-https://github.com/user-attachments/assets/30543bcf-5115-4e3f-a293-55ac673bee35
+![RetratAI portfolio cover](docs/cover.jpg)
 
-## ✨ Características
-- **Hero persuasivo** con headline y CTA principal.
-- **Catálogo de beneficios** en tarjetas animadas.
-- **Galería de ejemplos** responsive usando `next/image`.
-- **Tabla de precios** con plan destacado y comparativa.
-- **Llamado a la acción final** para convertir visitantes.
-- Paleta de colores y tipografía consistentes con una marca de IA creativa.
+Portfolio cover generated for presentation. Runtime screenshot:
 
-## 🛠 Stack
-- [Next.js 15 (App Router)](https://nextjs.org/)
-- [React 19](https://react.dev/)
-- [Tailwind CSS 3](https://tailwindcss.com/)
+![RetratAI screenshot](docs/screenshot.png)
 
-## 🚀 Puesta en marcha
+## What it demonstrates
+
+- Product-oriented landing page structure with hero, feature cards, gallery, pricing and CTA.
+- Responsive layout built with Tailwind CSS.
+- Clean visual hierarchy for a consumer AI product.
+- A simple foundation for extending into onboarding, payment and model-training flows.
+
+## Stack
+
+- Next.js 15
+- React 19
+- Tailwind CSS
+- TypeScript
+
+## Run locally
+
 ```bash
 npm install
 npm run dev
-# http://localhost:3000
 ```
 
-### Scripts disponibles
-| Script | Descripción |
-|--------|-------------|
-| `npm run dev` | Arranca el servidor de desarrollo (Turbopack). |
-| `npm run build` | Genera el build de producción. |
-| `npm run start` | Sirve la aplicación ya compilada. |
-| `npm run lint` | Ejecuta ESLint con la configuración de Next.js. |
+Open `http://localhost:3000`.
 
-## 📁 Estructura
-```
-src/
- └── app/
-     ├── layout.tsx   # Layout raíz
-     └── page.tsx     # Landing page completa
-public/
- └── images/         # Assets y favicon
-```
+## Notes
 
-## 🧭 Personalización
-- Sustituye los textos del Hero, beneficios y precios en `src/app/page.tsx`.
-- Reemplaza las imágenes `placehold.co` por previews generadas con tu propio modelo.
-- Actualiza los metadatos en `src/app/layout.tsx` para SEO/OG.
-- Ajusta colores y fuentes en `tailwind.config.ts` si deseas un branding diferente.
-
-## 🗺 Roadmap sugerido
-- Integrar formulario/captura de lead (Beehiiv, Mailchimp o API propia).
-- Componentizar secciones para reutilizarlas en variantes de campaña.
-- Añadir animaciones con Framer Motion.
-- Incluir testimonios o casos de uso.
-
-## 📄 Licencia
-MIT © Rainier Alejandro
+The current repo focuses on the public-facing product page. The natural next steps are lead capture, Stripe checkout, authenticated onboarding and integration with an image generation/training backend.
