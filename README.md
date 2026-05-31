@@ -2,7 +2,11 @@
 
 RetratAI es un SaaS para generar retratos profesionales con IA. El proyecto incluye todo el flujo de producto: onboarding de usuarios con Supabase Auth, entrenamiento de modelos personalizados, generación de headshots sobre Replicate y monetización mediante Stripe. Está pensado como una base realista para lanzar un negocio de fotos profesionales creadas por IA.
 
-https://github.com/user-attachments/assets/30543bcf-5115-4e3f-a293-55ac673bee35
+![RetratAI portfolio cover](docs/cover.jpg)
+
+Portfolio cover generated for presentation. Runtime screenshot:
+
+![RetratAI screenshot](docs/screenshot.png)
 
 ## ✨ Funcionalidades clave
 - **Autenticación y créditos**: registro con magic link (Supabase) y sistema de créditos administrado desde PostgreSQL.
