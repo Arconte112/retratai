@@ -1,4 +1,30 @@
-# 👨‍💼 [Headshot AI](https://headshots-starter.vercel.app/) - Professional Headshots with AI (powered by Astria.ai)
+# RetratAI
+
+![RetratAI — SaaS de fine-tuning](docs/cover.jpg)
+
+RetratAI is a complete SaaS for training personal AI models from selfies and generating professional portraits. This branch preserves the real product implementation: authentication, credits, guided image upload, model training, generation, galleries, Stripe billing and email notifications.
+
+## Product flow
+
+![RetratAI model dashboard](docs/screenshot.png)
+
+- Create and manage personal models.
+- Upload a curated training dataset.
+- Fine-tune through Astria and track processing state.
+- Generate and download professional portrait collections.
+- Purchase credits with Stripe and receive training notifications through Resend.
+
+## Stack
+
+Next.js 13, TypeScript, Supabase, Astria, Stripe, Vercel Blob, Resend, Tailwind CSS and shadcn/ui.
+
+## Origin and attribution
+
+RetratAI was developed from Astria's open-source Headshot AI starter and substantially adapted into a Spanish-language commercial product experience. The original starter documentation is preserved below.
+
+---
+
+# 👨‍💼 Headshot AI starter — Professional Headshots with AI (powered by Astria.ai)
 
 Introducing Headshot AI, an open-source project from [Astria](https://www.astria.ai/) that generates Professional AI Headshots in minutes.
 
